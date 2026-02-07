@@ -43,6 +43,23 @@ export class StitchCompletionProvider implements vscode.CompletionItemProvider {
         );
       }
       const items = gmlFile.getInScopeSymbolsAt(offset);
+      const lineToPos = document.getText(new vscode.Range(position.with(undefined, 0), position));
+      const isGlobalDot = lineToPos.match(/global\.\s*$/);
+      
+      if (isGlobalDot) {
+        const filteredItems = items.filter(m => {
+          // 1. Must be explicitly marked global
+          // 2. Filter out Noise: Functions, Assets, and Macros are technically 
+          //    accessible via global. but it's redundant and causes the "everything" bug.
+          const isFunction = !!m.getTypeByKind('Function');
+          const isAsset = m.type.type.some(t => t.kind.startsWith('Asset.'));
+          const isMacro = m.macro;
+      
+          return m.global && !isFunction && !isAsset && !isMacro;
+        });
+        return inScopeSymbolsToCompletions(document, filteredItems);
+      }
+
       return inScopeSymbolsToCompletions(document, items);
     }
     return undefined;
