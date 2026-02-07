@@ -4,6 +4,9 @@ import vscode from 'vscode';
 import type { StitchWorkspace } from './extension.workspace.mjs';
 import { locationOf } from './lib.mjs';
 import { warn } from './log.mjs';
+import {
+  Signifier,
+} from '@bscotch/gml-parser';
 
 export type SemanticTokenType = (typeof semanticTokenTypes)[number];
 export type SemanticTokenModifier = (typeof semanticTokenModifiers)[number];
@@ -53,84 +56,57 @@ export class GameMakerSemanticTokenProvider
   ): vscode.SemanticTokens | undefined {
     try {
       const file = this.provider.getGmlFile(document);
-      if (!file) {
-        return;
-      }
+      if (!file) return;
 
-      const tokensBuilder = new vscode.SemanticTokensBuilder(
-        semanticTokensLegend,
-      );
-      const cache = new Map<
-        ReferenceableType,
-        { type: SemanticTokenType; mods: Set<SemanticTokenModifier> }
-      >();
+      const tokensBuilder = new vscode.SemanticTokensBuilder(semanticTokensLegend);
+      
       for (const ref of file.refs) {
-        if (
-          !ref.start ||
-          isNaN(ref.start.line) ||
-          !ref.end ||
-          isNaN(ref.end.line)
-        ) {
-          continue;
-        }
-        // Get the location as a vscode range
+        if (!ref.start || isNaN(ref.start.line) || !ref.end || isNaN(ref.end.line)) continue;
+
         const signifier = ref.item;
+        if (signifier.name && ['self', 'other', 'noone', 'all', 'global'].includes(signifier.name)) continue;
 
-        // Exclude some types that don't make sense to override
-        if (
-          signifier.name &&
-          ['self', 'other', 'noone', 'all', 'global'].includes(signifier.name)
-        ) {
-          continue;
-        }
         const range = locationOf(ref)!.range;
-        // If we've already seen this symbol, use the cached semantic details
-        if (cache.has(signifier)) {
-          const { type, mods } = cache.get(signifier)!;
-          try {
-            tokensBuilder.push(range, type, [...mods]);
-          } catch (error) {
-            warn(error);
-            warn('CACHE ERROR');
-            console.dir({ range, type, mods });
-          }
-          continue;
+        const scopeLabel = getGmlScope(document, range, signifier);
+        
+        // Determine Base Token Type
+        let tokenType = inferSemanticToken(ref); 
+        const tokenModifiers = new Set<SemanticTokenModifier>();
+
+        // Apply Modifiers and Type Overrides based on our verified Scope
+        if (scopeLabel.includes('global')) {
+          tokenModifiers.add('global');
+        } else if (scopeLabel.includes('static')) {
+          tokenModifiers.add('static');
+          // Match your theme: statics are treated as properties
+          if (tokenType === 'variable') tokenType = 'property';
+        } else if (scopeLabel.includes('local') || scopeLabel === 'parameter') {
+          tokenModifiers.add('local');
+          if (scopeLabel === 'parameter') tokenType = 'parameter';
+        } else if (scopeLabel === 'instance variable' || scopeLabel === 'method') {
+          // Force instance variables to 'property' to fix shadowing
+          if (tokenType === 'variable') tokenType = 'property';
+          tokenModifiers.delete('global');
+          tokenModifiers.delete('local');
         }
 
-        // Figure out what the semantic details are
-        let tokenType = inferSemanticToken(ref);
-        if (tokenType === 'variable' && signifier.instance) {
-          tokenType = 'property';
-        }
-        const tokenModifiers = inferSemanticModifiers(ref);
-        const isAsset = signifier.type.type.find((t) =>
-          t.kind.startsWith('Asset.'),
-        );
-        if (isAsset) {
+        // Asset & Native checks
+        if (signifier.type.type.some(t => t.kind.startsWith('Asset.'))) {
           tokenModifiers.add('asset');
         }
-        if (!tokenType) {
-          warn('No token type for symbol', signifier);
-          continue;
+        if (signifier.native) {
+          tokenModifiers.add('defaultLibrary');
         }
+
         try {
           tokensBuilder.push(range, tokenType, [...tokenModifiers]);
-          cache.set(signifier, { type: tokenType, mods: tokenModifiers });
         } catch (err) {
-          warn(err);
-          warn('PUSH ERROR');
-          console.dir({
-            range,
-            tokenType,
-            tokenModifiers,
-          });
+          warn('PUSH ERROR', err);
         }
       }
-      const tokens = tokensBuilder.build();
-      return tokens;
+      return tokensBuilder.build();
     } catch (error) {
-      warn(error);
-      warn('OUTER ERROR');
+      warn('OUTER ERROR', error);
     }
     return;
   }
@@ -214,4 +190,44 @@ function inferSemanticModifiers(
     modifiers.delete('static');
   }
   return modifiers;
+}
+
+/**
+ * Determines the GML-specific scope of a variable based on its prefix and metadata.
+ */
+export function getGmlScope(document: vscode.TextDocument, range: vscode.Range, signifier: Signifier): string {
+  const lineText = document.lineAt(range.start.line).text;
+  const prefix = lineText.substring(0, range.start.character);
+  const isFunction = !!signifier.getTypeByKind('Function');
+
+  // 1. Explicit Global Prefix (Always Global)
+  if (prefix.match(/global\.\s*$/)) {
+    return isFunction ? 'global function' : 'global variable';
+  }
+
+  // 2. Explicit Local/Static Declarations
+  if (prefix.match(/\bstatic\s+$/)) return isFunction ? 'static method' : 'static variable';
+  if (prefix.match(/\bvar\s+$/)) return isFunction ? 'local function' : 'local variable';
+
+  // 3. Script Functions (Global without prefix)
+  // We trust the indexer for functions because script functions don't need 'global.'
+  if (signifier.global && isFunction) {
+    return 'global function';
+  }
+
+  // 4. SHADOWING PROTECTION
+  // If the indexer says it's global, but there's no 'global.' prefix and it's NOT a function,
+  // then the indexer has incorrectly merged a local/instance var with a global one.
+  if (signifier.global && !isFunction) {
+    return 'instance variable';
+  }
+
+  // 5. Other Metadata Fallbacks
+  if (signifier.parameter) return 'parameter';
+  if (signifier.local) return isFunction ? 'local function' : 'local variable';
+  if (signifier.static) return isFunction ? 'static method' : 'static variable';
+  if (signifier.native) return isFunction ? 'native function' : 'native variable';
+
+  // 6. Default
+  return isFunction ? 'method' : 'instance variable';
 }
