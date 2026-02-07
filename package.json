@@ -49,5 +49,16 @@
   "devDependencies": {
     "@bscotch/workspaces": "0.3.0",
     "typescript": "5.9.3"
+  },
+  "pnpm": {
+    "overrides": {
+      "zx": "7.2.3"
+    },
+    "onlyBuiltDependencies": [
+      "@vscode/vsce-sign",
+      "esbuild",
+      "keytar",
+      "sharp"
+    ]
   }
 }

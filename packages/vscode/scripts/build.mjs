@@ -5,6 +5,8 @@ import crypto from 'node:crypto';
 import fsp from 'node:fs/promises';
 import { $ } from 'zx';
 
+$.shell = 'bash';
+
 config();
 
 await $`mkdir -p ./dist`;
