@@ -27,6 +27,11 @@ const semanticTokenModifiers = literal([
   'global',
 ]);
 
+const GLOBAL_PREFIX_RE = /global\.\s*$/;
+const STATIC_PREFIX_RE = /\bstatic\s+$/;
+const VAR_PREFIX_RE = /\bvar\s+$/;
+const RESERVED_KEYWORDS = new Set(['self', 'other', 'noone', 'all', 'global']);
+
 export type SemanticTokenType = (typeof semanticTokenTypes)[number];
 export type SemanticTokenModifier = (typeof semanticTokenModifiers)[number];
 
@@ -43,7 +48,7 @@ export type GmlScope =
   | 'static'
   | 'local'
   | 'parameter'
-  | 'instance'
+  | 'property'
   | 'native';
 
 export class GameMakerSemanticTokenProvider
@@ -66,27 +71,34 @@ export class GameMakerSemanticTokenProvider
 
       const builder = new vscode.SemanticTokensBuilder(semanticTokensLegend);
 
+      const lineCache = new Map<number, string>();
+
       for (const ref of file.refs) {
         // Guard: Valid range
-        if (!ref.start?.line || !ref.end?.line) continue;
+        if (ref.start?.line === undefined || ref.end?.line === undefined) continue;
 
         const signifier = ref.item;
         // Guard: Reserved keywords handled by TextMate grammar
-        if (this.isReservedKeyword(signifier.name)) continue;
+        if (signifier.name && RESERVED_KEYWORDS.has(signifier.name)) continue;
 
         const location = locationOf(ref);
         if (!location) continue;
 
         const { range } = location;
-        const scope = resolveGmlScope(document, range, signifier);
 
+        let lineText = lineCache.get(range.start.line);
+        if (lineText === undefined) {
+          lineText = document.lineAt(range.start.line).text;
+          lineCache.set(range.start.line, lineText);
+        }
+
+        const scope = resolveGmlScope(lineText, range, signifier);
         const tokenType = this.inferTokenType(ref, scope);
         const modifiers = this.inferModifiers(ref, scope);
 
         try {
           builder.push(range, tokenType, [...modifiers]);
         } catch (err) {
-          // Likely overlapping tokens or invalid range
           warn('Token push failed', err);
         }
       }
@@ -97,23 +109,21 @@ export class GameMakerSemanticTokenProvider
     }
   }
 
-  private isReservedKeyword(name?: string): boolean {
-    return !!name && ['self', 'other', 'noone', 'all', 'global'].includes(name);
-  }
-
   private inferTokenType(ref: Reference, scope: GmlScope): SemanticTokenType {
     const { item: signifier } = ref;
-    const functionType = signifier.getTypeByKind('Function');
+    const isFunction = !!signifier.getTypeByKind('Function');
 
     if (signifier.enum) return 'enum';
     if (signifier.enumMember) return 'enumMember';
-    if (functionType?.isConstructor) return 'class';
-    if (functionType || scope === 'native') return 'function';
+    if (signifier.getTypeByKind('Function')?.isConstructor) return 'class';
+    if (isFunction) return 'function';
     if (signifier.macro) return 'macro';
     if (scope === 'parameter') return 'parameter';
+    if (signifier.asset) return 'variable';
 
-    // Treat instance variables and statics as properties for theme consistency
-    if (scope === 'instance' || scope === 'static') return 'property';
+    if (scope === 'property' || scope === 'static') {
+      return 'property';
+    }
 
     return 'variable';
   }
@@ -125,12 +135,20 @@ export class GameMakerSemanticTokenProvider
     if (scope === 'global') modifiers.add('global');
     if (scope === 'local' || scope === 'parameter') modifiers.add('local');
     if (scope === 'static') modifiers.add('static');
-
-    if (signifier.native) modifiers.add('defaultLibrary');
-    if (!signifier.writable) modifiers.add('readonly');
-
+    
+    // Native GML symbols (built-ins)
+    if (signifier.native || scope === 'native') {
+      modifiers.add('defaultLibrary');
+    }
+    
+    // Assets (Objects, Sprites, etc)
     if (signifier.type.type.some(t => t.kind.startsWith('Asset.'))) {
       modifiers.add('asset');
+      modifiers.add('readonly');
+    }
+
+    if (!signifier.writable || signifier.macro || signifier.enumMember) {
+      modifiers.add('readonly');
     }
 
     return modifiers;
@@ -146,25 +164,28 @@ export class GameMakerSemanticTokenProvider
 }
 
 export function resolveGmlScope(
-  document: vscode.TextDocument,
+  lineText: string,
   range: vscode.Range,
   signifier: Signifier
 ): GmlScope {
-  const lineText = document.lineAt(range.start.line).text;
   const prefix = lineText.substring(0, range.start.character);
   const isFunction = !!signifier.getTypeByKind('Function');
 
-  if (prefix.match(/global\.\s*$/)) return 'global';
-  if (prefix.match(/\bstatic\s+$/)) return 'static';
-  if (prefix.match(/\bvar\s+$/)) return 'local';
+  // 1. Syntax-based (Highest priority, handles shadowing)
+  if (GLOBAL_PREFIX_RE.test(prefix)) return 'global';
+  if (STATIC_PREFIX_RE.test(prefix)) return 'static';
+  if (VAR_PREFIX_RE.test(prefix)) return 'local';
 
+  // 2. Metadata-based
+  if (signifier.asset) return 'global';
   if (signifier.parameter) return 'parameter';
   if (signifier.native) return 'native';
   if (signifier.global && isFunction) return 'global';
-  if (signifier.global && !isFunction) return 'instance';
+  
+  // 3. Shadowing Protection
+  if (signifier.global && !isFunction) return 'property';
   if (signifier.local) return 'local';
   if (signifier.static) return 'static';
 
-  return 'instance';
+  return 'property';
 }
-
