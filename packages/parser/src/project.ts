@@ -1239,6 +1239,7 @@ export class Project {
    * back on the included spec if necessary.
    */
   protected async loadGmlSpec(): Promise<void> {
+    logger.log(`Loading GML spec...`);
     const t = Date.now();
 
     this.self = new Type('Struct').named('global') as StructType;
@@ -1261,6 +1262,7 @@ export class Project {
       runtimeVersion,
     });
     this.native = await Native.from(specFiles, this.self, this.types);
+
     logger.log(`Loaded GML spec in ${Date.now() - t}ms`);
   }
 
@@ -1269,6 +1271,9 @@ export class Project {
    * on disk) and add/remove any resources.
    */
   async reloadYyp() {
+    logger.log(`Reloading YYP...`);
+    const t = Date.now();
+
     // Update the YYP and identify new/deleted assets
     // const oldYyp = this.yyp;
     assert(this.yypPath, 'Cannot reload YYP without a path');
@@ -1292,12 +1297,17 @@ export class Project {
 
     // Try to keep anything that got touched *clean*
     this.drainDirtyFileUpdateQueue();
+
+    logger.log(`Reloaded YYP in ${Date.now() - t}ms`);
   }
 
   /**
    * @internal
    * Initialize a collection of new assets by parsing their GML */
   initiallyParseAssetCode(assets: Asset[]) {
+    logger.log(`Parsing code...`);
+    const t = Date.now();
+
     // Do scripts before objects
     assets = [...assets.values()].sort((a, b) => {
       if (a.assetKind === b.assetKind) {
@@ -1347,6 +1357,8 @@ export class Project {
     for (const asset of assets) {
       asset.updateDiagnostics();
     }
+
+    logger.log(`Parsed code in ${Date.now() - t}ms`);
   }
 
   protected async initialize(options?: ProjectOptions): Promise<void> {
@@ -1355,7 +1367,6 @@ export class Project {
     if (options?.onDiagnostics) {
       this.onDiagnostics(options.onDiagnostics);
     }
-    let t = Date.now();
     await this.reloadConfig();
     assert(this.yypPath, 'Cannot initialize without a path');
     this.yypWaiter = Yy.read(this.yypPath.absolute, 'project').then((yyp) => {
@@ -1375,15 +1386,7 @@ export class Project {
     ]);
 
     const assets = await this.loadAssets(options);
-    log.log(
-      'Resources',
-      this.assets.size,
-      'loaded files in',
-      Date.now() - t,
-      'ms',
-    );
 
-    t = Date.now();
     // Discover all globals
     // Sort assets by type, with objects 2nd to last and scripts last
     // to minimize the number of things that need to be updated after
