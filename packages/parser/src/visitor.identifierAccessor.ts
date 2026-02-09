@@ -128,9 +128,12 @@ export function visitIdentifierAccessor(
   if (item?.$tag === 'Sym') {
     lastAccessed.signifier = item;
     lastAccessed.types = arrayWrapped(getTypeStoreOrType(item));
+
     // Add a reference! But if this is an assignment that'll be
     // handled later.
-    const refAddedLater = rhs && !item.def;
+    const isDirectAssignment = rhs && suffixes.length === 0;
+    const refAddedLater = isDirectAssignment && !item.def;
+
     if (!refAddedLater) {
       item.addRef(lastAccessed.range);
     }
