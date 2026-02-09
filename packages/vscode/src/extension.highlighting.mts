@@ -70,16 +70,14 @@ export class GameMakerSemanticTokenProvider
       if (!file) return;
 
       const builder = new vscode.SemanticTokensBuilder(semanticTokensLegend);
-
       const lineCache = new Map<number, string>();
 
       for (const ref of file.refs) {
-        // Guard: Valid range
         if (ref.start?.line === undefined || ref.end?.line === undefined) continue;
 
         const signifier = ref.item;
-        // Guard: Reserved keywords handled by TextMate grammar
-        if (signifier.name && RESERVED_KEYWORDS.has(signifier.name)) continue;
+        // FIX: Guard against missing signifier (unresolved reference)
+        if (signifier?.name && RESERVED_KEYWORDS.has(signifier.name)) continue;
 
         const location = locationOf(ref);
         if (!location) continue;
@@ -98,8 +96,9 @@ export class GameMakerSemanticTokenProvider
 
         try {
           builder.push(range, tokenType, [...modifiers]);
-        } catch (err) {
-          warn('Token push failed', err);
+        } catch (error) {
+          warn('Token push failed', error);
+          continue; 
         }
       }
       return builder.build();
@@ -111,11 +110,12 @@ export class GameMakerSemanticTokenProvider
 
   private inferTokenType(ref: Reference, scope: GmlScope): SemanticTokenType {
     const { item: signifier } = ref;
-    const isFunction = !!signifier.getTypeByKind('Function');
 
+    if (!signifier) return 'variable';
     if (signifier.enum) return 'enum';
     if (signifier.enumMember) return 'enumMember';
     if (signifier.getTypeByKind('Function')?.isConstructor) return 'class';
+    const isFunction = !!signifier.getTypeByKind('Function');
     if (isFunction) return 'function';
     if (signifier.macro) return 'macro';
     if (scope === 'parameter') return 'parameter';
@@ -136,19 +136,21 @@ export class GameMakerSemanticTokenProvider
     if (scope === 'local' || scope === 'parameter') modifiers.add('local');
     if (scope === 'static') modifiers.add('static');
     
-    // Native GML symbols (built-ins)
-    if (signifier.native || scope === 'native') {
-      modifiers.add('defaultLibrary');
-    }
-    
-    // Assets (Objects, Sprites, etc)
-    if (signifier.type.type.some(t => t.kind.startsWith('Asset.'))) {
-      modifiers.add('asset');
-      modifiers.add('readonly');
-    }
+    if (signifier) {
+      // Native GML symbols (built-ins)
+      if (signifier.native || scope === 'native') {
+        modifiers.add('defaultLibrary');
+      }
+      
+      // Assets (Objects, Sprites, etc)
+      if (signifier.type.type.some(t => t.kind.startsWith('Asset.'))) {
+        modifiers.add('asset');
+        modifiers.add('readonly');
+      }
 
-    if (!signifier.writable || signifier.macro || signifier.enumMember) {
-      modifiers.add('readonly');
+      if (!signifier.writable || signifier.macro || signifier.enumMember) {
+        modifiers.add('readonly');
+      }
     }
 
     return modifiers;
@@ -183,7 +185,7 @@ export function resolveGmlScope(
   if (signifier.global && isFunction) return 'global';
   
   // 3. Shadowing Protection
-  if (signifier.global && !isFunction) return 'property';
+  if (signifier.global && !isFunction) return 'global';
   if (signifier.local) return 'local';
   if (signifier.static) return 'static';
 
