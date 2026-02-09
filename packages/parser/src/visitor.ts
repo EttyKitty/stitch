@@ -147,9 +147,26 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
       name,
       options?.excludeParents,
     );
-    // If the current scope is an instance allow for instance variables
-    // (but skip `id` since we're doing special things with that).
-    // Otherwise instance variables should be skipped.
+
+    if (!item) return undefined;
+
+    // 1. GML Rule: Standard global variables (global.my_var) REQUIRE the 'global.' prefix.
+    // Since this method is called for naked identifiers, we only return the item 
+    // if it's an "Auto-Global" (Assets, Macros, Functions, Enums, or Native constants).
+    const isAutoGlobal = !!(
+      item.asset ||
+      item.macro ||
+      item.native ||
+      item.enum ||
+      item.getTypeByKind('Function')
+    );
+
+    if (!isAutoGlobal) {
+      return undefined;
+    }
+
+    // 2. Handle native instance variables (like 'x' or 'id')
+    // that are registered globally but require an instance context.
     const isInstance =
       !scope.selfIsGlobal &&
       (['Id.Instance', 'Asset.GMObject'].includes(scope.self.kind) ||
