@@ -55,7 +55,17 @@ export function assignVariable(
     wasUndeclared = true;
 
     if (variable.container !== fullScope.global) {
-      // Then we can add a new member
+      const parent = variable.container as any;
+      const isAnonymousStruct = parent.kind === 'Struct' && !parent.name;
+
+      if (!inDefinitiveSelf && !info.local && !info.static && !isAnonymousStruct) {
+        visitor.PROCESSOR.addDiagnostic(
+          'UNDECLARED_GLOBAL_REFERENCE',
+          variable.range,
+          `Variable '${variable.name}' is being implicitly created.`
+        );
+      }
+
       signifier = variable.container.addMember(variable.name);
       if (signifier) {
         signifier.definedAt(variable.range);
@@ -76,7 +86,7 @@ export function assignVariable(
       visitor.PROCESSOR.addDiagnostic(
         'UNDECLARED_GLOBAL_REFERENCE',
         variable.range,
-        `${variable.name} is not declared anywhere but is assigned in global scope.`,
+        `Variable '${variable.name}' is assigned in global scope but not declared anywhere.`
       );
     }
   } else {

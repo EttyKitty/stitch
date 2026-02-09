@@ -95,24 +95,29 @@ export function visitIdentifierAccessor(
     const autoDeclarePrefixes =
       this.PROCESSOR.project.options?.settings?.autoDeclareGlobalsPrefixes ||
       [];
-    const isAutoDeclared = autoDeclarePrefixes.some(
-      (prefix) => lastAccessed.name?.startsWith(prefix),
+    const isAutoDeclared = autoDeclarePrefixes.some((prefix) =>
+      lastAccessed.name?.startsWith(prefix),
     );
     if (!isAutoDeclared) {
       this.PROCESSOR.addDiagnostic(
         'UNDECLARED_GLOBAL_REFERENCE',
         lastAccessed.range,
-        `${lastAccessed.name} looks like a global but is not declared anywhere.`,
+        `Variable '${lastAccessed.name}' is used in global scope but not declared anywhere.`
       );
     }
     // Just set the last accessed type to ANY so that we can
     // continue processing.
     lastAccessed.types = [this.ANY];
   } else if (!item) {
-    // Then this is a signifier that we have not seen declared yet,
-    // but might be declared later. So add it to the self scope but
-    // without setting where it's defined. Diagnostics should be added
-    // later.
+    if (!rhs) {
+      this.PROCESSOR.addDiagnostic(
+        'UNDECLARED_VARIABLE_REFERENCE',
+        lastAccessed.range,
+        `Undeclared symbol \`${lastAccessed.name}\`.`
+      );
+    }
+
+    // Then this is a signifier that we have not seen declared yet...
     item = scope.self.addMember(lastAccessed.name);
     if (item) {
       item.instance = true;

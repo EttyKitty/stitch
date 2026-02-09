@@ -16,6 +16,7 @@ export interface DiagnosticCollections {
   UNDECLARED_GLOBAL_REFERENCE: Diagnostic[];
   JSDOC: Diagnostic[];
   UNUSED: Diagnostic[];
+  IMPLICIT_CREATION: Diagnostic[];
 }
 export type DiagnosticCollectionName = keyof DiagnosticCollections;
 

@@ -20,6 +20,8 @@ export const diagnosticCollections = [
   'UNDECLARED_GLOBAL_REFERENCE',
   'INVALID_OPERATION',
   'JSDOC_MISMATCH',
+  'IMPLICIT_CREATION',
+  'UNDECLARED_VARIABLE_REFERENCE',
 ] satisfies DiagnosticCollectionName[];
 
 export class SignifierProcessor {

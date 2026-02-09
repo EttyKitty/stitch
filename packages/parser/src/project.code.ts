@@ -394,6 +394,7 @@ export class Code {
       UNDECLARED_VARIABLE_REFERENCE: [],
       JSDOC: [],
       UNUSED: [],
+      IMPLICIT_CREATION: [],
     };
   }
 
@@ -656,23 +657,50 @@ export class Code {
 
   computeUnusedSymbolDiagnostics() {
     this.diagnostics.UNUSED = [];
-    const unused = new Set<Signifier>();
+    const checkedSignifiers = new Set<Signifier>();
+
     for (const ref of this.refs) {
-      if (
-        unused.has(ref.item) ||
-        !ref.isDef ||
-        ref.item.native ||
-        !ref.item.getTypeByKind('Function') ||
-        !ref.item.global // For now restrict to global functions. The rest requires some nuance!
-      ) {
+      const signifier = ref.item;
+
+      // Skip if: not a definition, already checked, or a native GML symbol
+      if (!ref.isDef || signifier.native || checkedSignifiers.has(signifier)) {
         continue;
       }
-      // Are all refs to the definition?
-      const hasNonDefRefs = [...ref.item.refs.values()].some((r) => !r.isDef);
-      if (!hasNonDefRefs) {
-        unused.add(ref.item);
+      checkedSignifiers.add(signifier);
+
+      const parentType = signifier.parent as any;
+      const isAnonymousStruct = parentType?.kind === 'Struct' && !parentType?.name;
+      if (isAnonymousStruct) {
+        continue;
+      }
+
+      // Determine the type of symbol
+      const isFunction = !!signifier.getTypeByKind('Function');
+      const isLocal = signifier.local;
+      const isParameter = signifier.parameter;
+      const isInstance = signifier.instance;
+      const isMacro = signifier.macro;
+
+      // Filter: What do we actually want to flag as unused?
+      // We exclude Globals (non-functions) because they are often used for 
+      // cross-project state and flagging them can be noisy.
+      const shouldCheck = isFunction || isLocal || isParameter || isInstance || isMacro;
+      if (!shouldCheck || (signifier.global && !isFunction && !isMacro)) {
+        continue;
+      }
+
+      // Logic: Are there any references that are NOT definitions?
+      // (i.e., is this variable ever actually READ?)
+      const hasReads = [...signifier.refs].some((r) => !r.isDef);
+
+      if (!hasReads) {
+        let label = 'variable';
+        if (isFunction) label = 'function';
+        if (isParameter) label = 'parameter';
+        if (isMacro) label = 'macro';
+
         this.diagnostics.UNUSED.push(
-          Diagnostic.info(`Unused function \`${ref.item.name}\``, ref),
+          Diagnostic.info(`Unused ${label} \`${signifier.name}\``, ref),
         );
       }
     }
