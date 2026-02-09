@@ -25,42 +25,42 @@ async function main() {
   // Update Activity Bar view
   manifest.contributes.viewsContainers.activitybar = [
     {
-      id: 'bscotch-stitch',
+      id: 'etty-stitch',
       title: 'Stitch',
       icon: './images/stitch-logo-mono.svg',
     },
   ];
-  manifest.contributes.views['bscotch-stitch'] = [
+  manifest.contributes.views['etty-stitch'] = [
     {
-      id: 'bscotch-stitch-inspector',
+      id: 'etty-stitch-inspector',
       name: 'Inspector',
       icon: './images/stitch-logo-mono.svg',
       type: 'tree',
       contextualTitle: 'Stitch:Inspector',
     },
     {
-      id: 'bscotch-stitch-files',
+      id: 'etty-stitch-files',
       name: 'Included Files',
       icon: './images/stitch-logo-mono.svg',
       type: 'tree',
       contextualTitle: 'Stitch:Files',
     },
     {
-      id: 'bscotch-stitch-resources',
+      id: 'etty-stitch-resources',
       name: 'Resources',
       icon: './images/stitch-logo-mono.svg',
       type: 'tree',
       contextualTitle: 'Stitch:Resources',
     },
     {
-      id: 'bscotch-stitch-igor',
+      id: 'etty-stitch-igor',
       name: 'Runner',
       icon: './images/stitch-logo-mono.svg',
       type: 'webview',
       contextualTitle: 'Stitch:Runner',
     },
     {
-      id: 'bscotch-stitch-sprite-sources',
+      id: 'etty-stitch-sprite-sources',
       name: 'Sprite Sources',
       icon: './images/stitch-logo-mono.svg',
       type: 'tree',

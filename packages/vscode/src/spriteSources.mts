@@ -290,7 +290,7 @@ export class SpriteSourcesTree implements vscode.TreeDataProvider<Item> {
 
   static register(workspace: StitchWorkspace): vscode.Disposable[] {
     const tree = new SpriteSourcesTree(workspace);
-    tree.view = vscode.window.createTreeView('bscotch-stitch-sprite-sources', {
+    tree.view = vscode.window.createTreeView('etty-stitch-sprite-sources', {
       treeDataProvider: tree,
     });
     tree.currentProject = workspace.getActiveProject();

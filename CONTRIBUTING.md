@@ -98,7 +98,7 @@ To work on Stitch for VSCode, you'll need an up-to-date version of [Visual Studi
 
 Open the `packages/vscode` folder in a new VSCode window, then for your initial setup:
 
-- Run `pnpm install --filter=bscotch-stitch-vscode...` (install all relevant external deps)
+- Run `pnpm install --filter=etty-stitch-vscode...` (install all relevant external deps)
 - Run `pnpm build:deps` (builds all monorepo projects that this one depends on)
 
 Once everything has been installed and built:

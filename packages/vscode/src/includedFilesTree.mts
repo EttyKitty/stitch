@@ -23,7 +23,7 @@ export class StitchIncludedFilesTree
   readonly onDidCollapseElement = this._onDidCollapseElement.event;
 
   protected constructor(readonly workspace: StitchWorkspace) {
-    this.view = vscode.window.createTreeView('bscotch-stitch-files', {
+    this.view = vscode.window.createTreeView('etty-stitch-files', {
       treeDataProvider: this,
     });
   }

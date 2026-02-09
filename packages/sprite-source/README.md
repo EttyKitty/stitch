@@ -1,6 +1,6 @@
 # Sprite Source
 
-This project provides utilities for creating art asset pipelines for GameMaker games. It is used in [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.bscotch-stitch-vscode) and developed against the pipeline and team requirements of [Butterscotch Shenanigans](https://www.bscotch.net/). It may or may not be applicable to other use cases.
+This project provides utilities for creating art asset pipelines for GameMaker games. It is used in [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.etty-stitch-vscode) and developed against the pipeline and team requirements of [Butterscotch Shenanigans](https://www.bscotch.net/). It may or may not be applicable to other use cases.
 
 **⚠️ This package will make irreversible changes to your files! Use it at your own risk, and use version control to keep everything safe.**
 
@@ -45,7 +45,7 @@ To create an art pipeline, you'll need:
 
 ### Stitch for VSCode
 
-[Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.bscotch-stitch-vscode) has this package built right into it, and has an option to turn on a "watch" mode so that as you make changes to your source images they'll immediately get imported into your GameMaker project.
+[Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.etty-stitch-vscode) has this package built right into it, and has an option to turn on a "watch" mode so that as you make changes to your source images they'll immediately get imported into your GameMaker project.
 
 To use it, get VSCode and install the Stitch extension, then open the Stitch panel and look for the "Sprite Sources" sub-panel (it's probably the bottom-most one). From there you can find buttons to add sprite source folders, add stages to them, open the config files for direct editing, toggle the import watcher, manually run an import, and see a list of sprites updated in the current session.
 

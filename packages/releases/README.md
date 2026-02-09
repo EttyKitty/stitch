@@ -2,7 +2,7 @@
 
 [GameMaker](https://gamemaker.io/) releases new builds fairly frequently across several release channels (e.g. beta, stable, and LTS). Each release includes two separate artifacts: an IDE installer and a Runtime.
 
-This package centralizes all of the official GameMaker IDE and Runtime version information (for Windows versions) into a single structured document. It is used by [Butterscotch Shenanigans](https://www.bscotch.net) to keep an up-to-date, centralized history of releases for use in [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.bscotch-stitch-vscode) and other tools. These are uploaded [as GitHub releases](https://github.com/bscotch/gamemaker-info/releases).
+This package centralizes all of the official GameMaker IDE and Runtime version information (for Windows versions) into a single structured document. It is used by [Butterscotch Shenanigans](https://www.bscotch.net) to keep an up-to-date, centralized history of releases for use in [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.etty-stitch-vscode) and other tools. These are uploaded [as GitHub releases](https://github.com/bscotch/gamemaker-info/releases).
 
 > ⚠️ This package used to provide consolidated _release notes_ along with version information. GameMaker has since moved their release notes out of their feeds and into [a new site](https://releases.gamemaker.io/). The release note information provided by this package is therefore no longer useful!
 

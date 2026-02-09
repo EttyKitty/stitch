@@ -250,7 +250,7 @@ export class GameMakerInspectorProvider
   }
 
   register(): vscode.Disposable[] {
-    this.view = vscode.window.createTreeView('bscotch-stitch-inspector', {
+    this.view = vscode.window.createTreeView('etty-stitch-inspector', {
       treeDataProvider: this,
     });
     const activeEditorMonitor = vscode.window.onDidChangeActiveTextEditor(() =>

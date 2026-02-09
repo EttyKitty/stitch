@@ -17,7 +17,7 @@ import type { StitchWorkspace } from './extension.workspace.mjs';
 import { registerCommand, uriFromCodeFile } from './lib.mjs';
 
 export class StitchIgorView implements vscode.WebviewViewProvider {
-  readonly viewType = 'bscotch-stitch-igor';
+  readonly viewType = 'etty-stitch-igor';
   protected container?: vscode.WebviewView;
   public editing: Asset<'sprites'> | undefined;
   public zooms = new Map<Asset<'sprites'>, number>();

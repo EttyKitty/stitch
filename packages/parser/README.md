@@ -1,6 +1,6 @@
 # GameMaker Language (GML) Parser (`gml-parser`)
 
-A parser, project model, and meta-programming tool for [GameMaker](https://gamemaker.io/) projects, which provides the core project-management features provided by [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.bscotch-stitch-vscode).
+A parser, project model, and meta-programming tool for [GameMaker](https://gamemaker.io/) projects, which provides the core project-management features provided by [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.etty-stitch-vscode).
 
 This package can also be used independently of Stitch for VSCode to create automations and pipelines for working with GameMaker projects.
 
@@ -10,7 +10,7 @@ Stitch is developed by [Butterscotch Shenanigans](https://www.bscotch.net) ("Bsc
 
 ## Overview
 
-This package was developed to replaced our [Stitch CLI](https://github.com/bscotch/stitch/tree/develop/packages/core), so that we could support newer versions of GameMaker and provide underlying features for using VSCode as an alternate GameMaker IDE via [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.bscotch-stitch-vscode).
+This package was developed to replaced our [Stitch CLI](https://github.com/bscotch/stitch/tree/develop/packages/core), so that we could support newer versions of GameMaker and provide underlying features for using VSCode as an alternate GameMaker IDE via [Stitch for VSCode](https://marketplace.visualstudio.com/items?itemName=bscotch.etty-stitch-vscode).
 
 Unlike the Stitch CLI, which is focused on high-level project management, this parser fully models an entire project, including reference and resource tracking.
 

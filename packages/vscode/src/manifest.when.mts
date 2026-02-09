@@ -1,20 +1,20 @@
 // See https://code.visualstudio.com/api/references/when-clause-contexts
 
-const assetTreeFocused = 'view == bscotch-stitch-resources';
-const spriteSourceTreeFocused = 'view == bscotch-stitch-sprite-sources';
-const includedFileTreeFocused = 'view == bscotch-stitch-files';
+const assetTreeFocused = 'view == etty-stitch-resources';
+const spriteSourceTreeFocused = 'view == etty-stitch-sprite-sources';
+const includedFileTreeFocused = 'view == etty-stitch-files';
 const hasProjects = 'stitch.projectCount > 0';
 const hasOneProject = 'stitch.projectCount == 1';
 const viewItemIsProject = 'viewItem == project';
 const resourceIsGml = 'resourceExtname == .gml';
-const runnerViewFocused = 'view == bscotch-stitch-igor';
+const runnerViewFocused = 'view == etty-stitch-igor';
 
 export const when = {
   onWindows: 'isWindows',
   assetTreeFocused,
   spriteSourceTreeFocused,
   includedFileTreeFocused,
-  inspectorFocused: 'view == bscotch-stitch-inspector',
+  inspectorFocused: 'view == etty-stitch-inspector',
   editorFocused: 'editorFocus',
   hasProjects,
   runnerViewFocused,

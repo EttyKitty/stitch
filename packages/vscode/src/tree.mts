@@ -58,7 +58,7 @@ export class GameMakerTreeProvider
 {
   tree = new GameMakerRootFolder();
   view!: vscode.TreeView<Treeable>;
-  readonly treeMimeType = 'application/vnd.code.tree.bscotch-stitch-resources';
+  readonly treeMimeType = 'application/vnd.code.tree.etty-stitch-resources';
   readonly dragMimeTypes = [this.treeMimeType];
   readonly dropMimeTypes = [this.treeMimeType, 'text/uri-list'];
 
@@ -1014,7 +1014,7 @@ export class GameMakerTreeProvider
   }
 
   register() {
-    this.view = vscode.window.createTreeView('bscotch-stitch-resources', {
+    this.view = vscode.window.createTreeView('etty-stitch-resources', {
       treeDataProvider: this.rebuild(),
       canSelectMany: true,
       dragAndDropController: this,

@@ -1,6 +1,6 @@
 {
   "name": "etty-stitch-vscode",
-  "displayName": "Stitch-Etty",
+  "displayName": "Stitch",
   "version": "1.82.0",
   "private": true,
   "description": "GameMaker Language (GML) support and related tools for Visual Studio Code",
@@ -586,17 +586,17 @@
       {
         "command": "stitch.run",
         "key": "f5",
-        "when": "(editorTextFocus && resourceExtname =~ /\\.(yy|yyp|gml)$/) || view == bscotch-stitch-resources"
+        "when": "(editorTextFocus && resourceExtname =~ /\\.(yy|yyp|gml)$/) || view == etty-stitch-resources"
       },
       {
         "command": "stitch.run.noDefaults",
         "key": "shift+f5",
-        "when": "(editorTextFocus && resourceExtname =~ /\\.(yy|yyp|gml)$/) || view == bscotch-stitch-resources"
+        "when": "(editorTextFocus && resourceExtname =~ /\\.(yy|yyp|gml)$/) || view == etty-stitch-resources"
       },
       {
         "command": "stitch.assets.rename",
         "key": "f2",
-        "when": "view == bscotch-stitch-resources && viewItem =~ /^asset-/"
+        "when": "view == etty-stitch-resources && viewItem =~ /^asset-/"
       },
       {
         "command": "stitch.openDocs",
@@ -655,67 +655,67 @@
       "view/title": [
         {
           "command": "stitch.assets.newFolder",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount == 1",
+          "when": "view == etty-stitch-resources && stitch.projectCount == 1",
           "group": "navigation@1"
         },
         {
           "command": "stitch.openIde",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount == 1",
+          "when": "view == etty-stitch-resources && stitch.projectCount == 1",
           "group": "navigation@3"
         },
         {
           "command": "stitch.runner.toggleSearchWidget",
-          "when": "view == bscotch-stitch-igor",
+          "when": "view == etty-stitch-igor",
           "group": "navigation@1"
         },
         {
           "command": "stitch.runner.toggleLineWrap",
-          "when": "view == bscotch-stitch-igor",
+          "when": "view == etty-stitch-igor",
           "group": "navigation@2"
         },
         {
           "command": "stitch.runner.refresh",
-          "when": "view == bscotch-stitch-igor",
+          "when": "view == etty-stitch-igor",
           "group": "navigation@3"
         },
         {
           "command": "stitch.stop",
-          "when": "view == bscotch-stitch-igor || (view == bscotch-stitch-resources && config.stitch.run.inTerminal)",
+          "when": "view == etty-stitch-igor || (view == etty-stitch-resources && config.stitch.run.inTerminal)",
           "group": "navigation@4"
         },
         {
           "command": "stitch.run",
-          "when": "view == bscotch-stitch-igor || (view == bscotch-stitch-resources && config.stitch.run.inTerminal)",
+          "when": "view == etty-stitch-igor || (view == etty-stitch-resources && config.stitch.run.inTerminal)",
           "group": "navigation@5"
         },
         {
           "command": "stitch.run.noDefaults",
-          "when": "view == bscotch-stitch-igor || (view == bscotch-stitch-resources && config.stitch.run.inTerminal)",
+          "when": "view == etty-stitch-igor || (view == etty-stitch-resources && config.stitch.run.inTerminal)",
           "group": "navigation@4"
         },
         {
           "command": "stitch.clean",
-          "when": "view == bscotch-stitch-igor || (view == bscotch-stitch-resources && config.stitch.run.inTerminal)",
+          "when": "view == etty-stitch-igor || (view == etty-stitch-resources && config.stitch.run.inTerminal)",
           "group": "navigation@3"
         },
         {
           "command": "stitch.spriteSource.clearCache",
-          "when": "view == bscotch-stitch-sprite-sources",
+          "when": "view == etty-stitch-sprite-sources",
           "group": "navigation@1"
         },
         {
           "command": "stitch.spriteSource.create",
-          "when": "view == bscotch-stitch-sprite-sources",
+          "when": "view == etty-stitch-sprite-sources",
           "group": "navigation@2"
         },
         {
           "command": "stitch.spriteSource.import",
-          "when": "view == bscotch-stitch-sprite-sources",
+          "when": "view == etty-stitch-sprite-sources",
           "group": "navigation@4"
         },
         {
           "command": "stitch.spriteSource.edit",
-          "when": "view == bscotch-stitch-sprite-sources",
+          "when": "view == etty-stitch-sprite-sources",
           "group": "navigation@3"
         }
       ],
@@ -732,22 +732,22 @@
         },
         {
           "command": "stitch.assets.filters.enable",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-disabled",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-disabled",
           "group": "inline@1"
         },
         {
           "command": "stitch.assets.filters.disable",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-enabled",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-enabled",
           "group": "inline@1"
         },
         {
           "command": "stitch.assets.filters.new",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-group",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == tree-filter-group",
           "group": "inline@1"
         },
         {
           "command": "stitch.assets.filters.delete",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem =~ /^tree-filter-(enabled|disabled)/",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem =~ /^tree-filter-(enabled|disabled)/",
           "group": "inline@2"
         },
         {
@@ -817,7 +817,7 @@
         },
         {
           "command": "stitch.assets.newFolder",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@1"
         },
         {
@@ -837,22 +837,22 @@
         },
         {
           "command": "stitch.assets.deleteSpriteFrame",
-          "when": "viewItem == sprite-frame && view == bscotch-stitch-resources",
+          "when": "viewItem == sprite-frame && view == etty-stitch-resources",
           "group": "7_modification@9"
         },
         {
           "command": "stitch.assets.setParent",
-          "when": "(view == bscotch-stitch-resources && viewItem == asset-objects) || (view == bscotch-stitch-inspector && viewItem == inspector-object-parents)",
+          "when": "(view == etty-stitch-resources && viewItem == asset-objects) || (view == etty-stitch-inspector && viewItem == inspector-object-parents)",
           "group": "navigation@1"
         },
         {
           "command": "stitch.assets.setSprite",
-          "when": "(view == bscotch-stitch-resources && viewItem == asset-objects) || (view == bscotch-stitch-inspector && viewItem == inspector-object-sprites)",
+          "when": "(view == etty-stitch-resources && viewItem == asset-objects) || (view == etty-stitch-inspector && viewItem == inspector-object-sprites)",
           "group": "navigation@1"
         },
         {
           "command": "stitch.assets.newEvent",
-          "when": "(view == bscotch-stitch-resources && viewItem == asset-objects) || (view == bscotch-stitch-inspector && viewItem == inspector-object-events)",
+          "when": "(view == etty-stitch-resources && viewItem == asset-objects) || (view == etty-stitch-inspector && viewItem == inspector-object-events)",
           "group": "navigation@1"
         },
         {
@@ -862,27 +862,27 @@
         },
         {
           "command": "stitch.openIde",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@3"
         },
         {
           "command": "stitch.stop",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@3"
         },
         {
           "command": "stitch.run",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@5"
         },
         {
           "command": "stitch.run.noDefaults",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@4"
         },
         {
           "command": "stitch.clean",
-          "when": "view == bscotch-stitch-resources && stitch.projectCount > 0 && viewItem == project",
+          "when": "view == etty-stitch-resources && stitch.projectCount > 0 && viewItem == project",
           "group": "inline@3"
         },
         {
@@ -892,7 +892,7 @@
         },
         {
           "command": "stitch.spriteSource.clearRecentImports",
-          "when": "viewItem == sprites && view == bscotch-stitch-sprite-sources",
+          "when": "viewItem == sprites && view == etty-stitch-sprite-sources",
           "group": "7_modification@8"
         },
         {
@@ -1021,37 +1021,37 @@
       }
     ],
     "views": {
-      "bscotch-stitch": [
+      "etty-stitch": [
         {
-          "id": "bscotch-stitch-inspector",
+          "id": "etty-stitch-inspector",
           "name": "Inspector",
           "icon": "./images/stitch-logo-mono.svg",
           "type": "tree",
           "contextualTitle": "Stitch:Inspector"
         },
         {
-          "id": "bscotch-stitch-files",
+          "id": "etty-stitch-files",
           "name": "Included Files",
           "icon": "./images/stitch-logo-mono.svg",
           "type": "tree",
           "contextualTitle": "Stitch:Files"
         },
         {
-          "id": "bscotch-stitch-resources",
+          "id": "etty-stitch-resources",
           "name": "Resources",
           "icon": "./images/stitch-logo-mono.svg",
           "type": "tree",
           "contextualTitle": "Stitch:Resources"
         },
         {
-          "id": "bscotch-stitch-igor",
+          "id": "etty-stitch-igor",
           "name": "Runner",
           "icon": "./images/stitch-logo-mono.svg",
           "type": "webview",
           "contextualTitle": "Stitch:Runner"
         },
         {
-          "id": "bscotch-stitch-sprite-sources",
+          "id": "etty-stitch-sprite-sources",
           "name": "Sprite Sources",
           "icon": "./images/stitch-logo-mono.svg",
           "type": "tree",
@@ -1062,7 +1062,7 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "bscotch-stitch",
+          "id": "etty-stitch",
           "title": "Stitch",
           "icon": "./images/stitch-logo-mono.svg"
         }
@@ -1070,23 +1070,23 @@
     },
     "viewsWelcome": [
       {
-        "view": "bscotch-stitch-sprite-sources",
+        "view": "etty-stitch-sprite-sources",
         "contents": "A \"sprite source\" is a folder of images, or a folder of folders-of-images, representing sprites (folders) and their frames (images). Stitch can batch-import and update sprites from sprites sources."
       },
       {
-        "view": "bscotch-stitch-resources",
+        "view": "etty-stitch-resources",
         "contents": "The resources view is a tree of all assets in your project, including objects, sprites, sounds, and more. You can create, edit, and delete assets from this view."
       },
       {
-        "view": "bscotch-stitch-inspector",
+        "view": "etty-stitch-inspector",
         "contents": "The inspector view shows detailed information about the currently selected asset in the resources view, for certain asset types."
       },
       {
-        "view": "bscotch-stitch-files",
+        "view": "etty-stitch-files",
         "contents": "The Included Files view shows all datafiles included in your project."
       },
       {
-        "view": "bscotch-stitch-igor",
+        "view": "etty-stitch-igor",
         "contents": "The Runner view shows the output logs of your game when you run it from Stitch. By default the terminal is used instead of this panel."
       }
     ]
