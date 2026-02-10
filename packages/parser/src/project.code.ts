@@ -295,14 +295,14 @@ export class Code {
     return { ...this.diagnostics };
   }
 
-  get refs() {
+  get refs(): readonly Reference[] {
     this.sortRanges();
-    return [...this._refs];
+    return this._refs;
   }
 
-  get functionArgRanges() {
+  get functionArgRanges(): readonly FunctionArgRange[] {
     this.sortRanges();
-    return [...this._functionArgRanges];
+    return this._functionArgRanges;
   }
 
   get structNewMemberRanges() {

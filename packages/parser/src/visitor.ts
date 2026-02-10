@@ -118,24 +118,27 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
   ): Signifier | undefined {
     const scope = this.PROCESSOR.fullScope;
 
-    // Find matches from all scopes, then return the first declared one.
-    // If none are declared, return the first found.
-    const matches = [
-      // Local scope
-      scope.local.getMember(
-        name,
-        false, // Locals should always search parents, since `catch` statements are the only thing that extend local scope
-      ),
-      // Self scope
-      scope.selfIsGlobal
-        ? undefined
-        : scope.self.getMember(name, options?.excludeParents),
-      // Global scope
-      options?.excludeGlobal
-        ? undefined
-        : this.FIND_GLOBAL_BY_NAME(name, options),
-    ].filter((i) => i !== undefined) as Signifier[];
-    return matches.find((i) => i.def) || matches[0];
+    // 1. Check Local Scope (Highest precedence)
+    const local = scope.local.getMember(name, false);
+    if (local?.def) return local;
+
+    // 2. Check Self Scope
+    let selfMatch: Signifier | undefined;
+    if (!scope.selfIsGlobal) {
+      selfMatch = scope.self.getMember(name, options?.excludeParents);
+      if (selfMatch?.def) return selfMatch;
+    }
+
+    // 3. Check Global Scope
+    let globalMatch: Signifier | undefined;
+    if (!options?.excludeGlobal) {
+      globalMatch = this.FIND_GLOBAL_BY_NAME(name, options);
+      if (globalMatch?.def) return globalMatch;
+    }
+
+    // Fallback: If no one has a 'definition' (e.g. all are inferred or native),
+    // return the first one found in order of precedence.
+    return local ?? selfMatch ?? globalMatch;
   }
 
   protected FIND_GLOBAL_BY_NAME(
@@ -151,7 +154,7 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
     if (!item) return undefined;
 
     // 1. GML Rule: Standard global variables (global.my_var) REQUIRE the 'global.' prefix.
-    // Since this method is called for naked identifiers, we only return the item 
+    // Since this method is called for naked identifiers, we only return the item
     // if it's an "Auto-Global" (Assets, Macros, Functions, Enums, or Native constants).
     const isAutoGlobal = !!(
       item.asset ||
@@ -229,9 +232,12 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
           item.signifier?.addRef(range);
         }
         break;
+      case 'Noone':
+      case 'Identifier':
+        item = this.FIND_ITEM_BY_NAME(identifier.name, options);
+        break;
       default:
-        const { name } = identifier;
-        item = this.FIND_ITEM_BY_NAME(name, options);
+        logger.warn(`Unhandled identifier type: ${(identifier as any).type}`);
         break;
     }
     if (item) {
@@ -649,11 +655,17 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
         // name but refers to a local variable.
         const matchingVariable = this.FIND_ITEM_BY_NAME(name);
         if (!matchingVariable) {
-          // Add an error message
           this.PROCESSOR.addDiagnostic(
             'INVALID_OPERATION',
             parts.Identifier![0],
             `Struct literal shorthand requires an existing variable named "${name}"`,
+          );
+        } else if (matchingVariable.getTypeByKind('Function')) {
+          // GML doesn't allow shorthand for functions usually
+          this.PROCESSOR.addDiagnostic(
+            'INVALID_OPERATION',
+            parts.Identifier![0],
+            `Cannot use function "${name}" as struct shorthand.`,
           );
         } else {
           struct.addMember(matchingVariable, { override: true })!;
