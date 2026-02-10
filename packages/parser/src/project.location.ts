@@ -251,6 +251,7 @@ export class Reference extends Range {
   override readonly $tag = 'Ref';
   /** If this is reference marks the declaration */
   isDef = false;
+  isWrite = false; 
   protected _itemNamePattern: RegExp | undefined = undefined;
 
   constructor(

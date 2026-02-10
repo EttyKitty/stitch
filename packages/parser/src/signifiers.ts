@@ -62,9 +62,18 @@ export class Signifier extends Flags {
     return copy as this;
   }
 
-  addRef(location: Range, isDef = false): Reference {
+  addRef(location: Range, isDef = false, isWrite = false): Reference {
+    // Check for existing reference at this exact range to prevent "self-usage" shadowing
+    for (const existing of this.refs) {
+      if (existing.start.offset === location.start.offset && existing.end.offset === location.end.offset) {
+        existing.isDef = existing.isDef || isDef;
+        existing.isWrite = existing.isWrite || isWrite;
+        return existing;
+      }
+    }
     const ref = Reference.fromRange(location, this as any);
     ref.isDef = isDef;
+    ref.isWrite = isWrite;
     this.refs.add(ref);
     location.file.addRef(ref);
     return ref;

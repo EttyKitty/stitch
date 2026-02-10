@@ -27,6 +27,10 @@ export interface AssignmentVariable {
   container: WithableType;
 }
 
+/**
+ * Handles the assignment of a value to a variable, managing signifier creation,
+ * reference tracking, and type inference.
+ */
 export function assignVariable(
   visitor: GmlSignifierVisitor,
   variable: AssignmentVariable,
@@ -34,23 +38,14 @@ export function assignVariable(
   info: AssignmentInfo,
 ) {
   const rhs = rhsFrom(rawRhs);
-
-  //#region Collect useful info
-  // Figure out what we're assigning to so we can handle
-  // already-known types (from JSDocs).
   const fullScope = visitor.PROCESSOR.fullScope;
-  // Are we in the definitiveSelf?
   const inDefinitiveSelf = variable.container === fullScope.definitiveSelf;
-  //#endregion
 
-  // Find the existing variable
+  // 1. Find or Create the Signifier
   let signifier = variable.container.getMember(variable.name);
-  const isSelfOwned =
-    !!signifier && !!variable.container.getMember(variable.name, true);
   let ref: Reference | undefined;
-
-  // Add the variable if missing
   let wasUndeclared = false;
+
   if (!signifier) {
     wasUndeclared = true;
 
@@ -62,45 +57,40 @@ export function assignVariable(
         visitor.PROCESSOR.addDiagnostic(
           'UNDECLARED_GLOBAL_REFERENCE',
           variable.range,
-          `Variable '${variable.name}' is being implicitly created.`
+          `Variable '${variable.name}' is being implicitly created.`,
         );
       }
-
       signifier = variable.container.addMember(variable.name);
-      if (signifier) {
-        signifier.definedAt(variable.range);
-        signifier.static = !!info.static;
-        signifier.instance = !!info.instance || !info.local;
-        signifier.local = !!info.local;
-        signifier.definitive = inDefinitiveSelf;
-        ref = signifier.addRef(variable.range, true);
-      } else {
-        // Then this is an immutable type
-        visitor.PROCESSOR.addDiagnostic(
-          'INVALID_OPERATION',
-          variable.range,
-          `Cannot add variables to this type.`,
-        );
-      }
     } else {
       visitor.PROCESSOR.addDiagnostic(
         'UNDECLARED_GLOBAL_REFERENCE',
         variable.range,
-        `Variable '${variable.name}' is assigned in global scope but not declared anywhere.`
+        `Variable '${variable.name}' is assigned in global scope but not declared anywhere.`,
       );
     }
-  } else {
-    // Add a reference to the item.
-    ref = signifier.addRef(variable.range);
-    // If this is the first time we've seen it, and it wouldn't have
-    // an unambiguous declaration, add its definition
+  }
+
+  // 2. Update Metadata and References
+  if (signifier) {
+    // CORE FIX: Always update flags. If these are only set during creation,
+    // symbols found via JSDoc or incremental indexing might lack them,
+    // causing the diagnostic to skip them.
+    signifier.static = !!info.static;
+    signifier.instance = !!info.instance || !info.local;
+    signifier.local = !!info.local;
+
+    // Determine if this is the primary definition or a subsequent write
     if (!signifier.def) {
       wasUndeclared = true;
       signifier.definedAt(variable.range);
-      ref.isDef = true;
+      // Mark as both Definition and Write
+      ref = signifier.addRef(variable.range, true, true);
+    } else {
+      // Mark as a Write (not a definition)
+      ref = signifier.addRef(variable.range, false, true);
     }
-    // If this variable comes from a non-definitive declaration,
-    // and *would* be definitive here, then we need to update it.
+
+    // Ensure definition is moved to the definitive self (e.g. Constructor/Create) if applicable
     ensureDefinitive(
       variable.container as WithableType,
       visitor.PROCESSOR.currentDefinitiveSelf,
@@ -109,11 +99,12 @@ export function assignVariable(
     );
   }
 
-  // Handle RHS
+  // 3. Handle Right-Hand Side (RHS) logic
   const assignedToFunction = functionFromRhs(rhs);
   const assignedToStructLiteral = structLiteralFromRhs(rhs);
   const assignedToArrayLiteral = arrayLiteralFromRhs(rhs);
   const ctx = { ...info.ctx, docs: info.docs, signifier };
+
   if (assignedToFunction || assignedToStructLiteral || assignedToArrayLiteral) {
     if (assignedToFunction) {
       ctx.self = variable.container;
@@ -129,6 +120,7 @@ export function assignVariable(
       visitor.PROCESSOR.project.types,
     );
     const forceOverride = info.docs?.jsdoc.kind === 'type';
+
     if (signifier && (!signifier.isTyped || wasUndeclared || forceOverride)) {
       if (info.docs) {
         signifier.describe(info.docs.jsdoc.description);
@@ -142,6 +134,7 @@ export function assignVariable(
       signifier.setType(visitor.ANY);
     }
   }
+
   if (signifier && ref) {
     return {
       item: signifier,

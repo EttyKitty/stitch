@@ -661,44 +661,35 @@ export class Code {
 
     for (const ref of this.refs) {
       const signifier = ref.item;
-
-      // Skip if: not a definition, already checked, or a native GML symbol
       if (!ref.isDef || signifier.native || checkedSignifiers.has(signifier)) {
         continue;
       }
       checkedSignifiers.add(signifier);
 
+      const isLocal = signifier.local;
+      const isInstance = signifier.instance;
+      const isParameter = signifier.parameter;
+      const isFunction = !!signifier.getTypeByKind('Function');
+      const isMacro = signifier.macro;
+
+      // FIX: Only skip anonymous structs if the symbol isn't a Local or Parameter.
+      // Local scopes are anonymous structs, but we definitely want to check them.
       const parentType = signifier.parent as any;
       const isAnonymousStruct = parentType?.kind === 'Struct' && !parentType?.name;
-      if (isAnonymousStruct) {
+      if (isAnonymousStruct && !isLocal && !isParameter) {
         continue;
       }
 
-      // Determine the type of symbol
-      const isFunction = !!signifier.getTypeByKind('Function');
-      const isLocal = signifier.local;
-      const isParameter = signifier.parameter;
-      const isInstance = signifier.instance;
-      const isMacro = signifier.macro;
-
-      // Filter: What do we actually want to flag as unused?
-      // We exclude Globals (non-functions) because they are often used for 
-      // cross-project state and flagging them can be noisy.
       const shouldCheck = isFunction || isLocal || isParameter || isInstance || isMacro;
       if (!shouldCheck || (signifier.global && !isFunction && !isMacro)) {
         continue;
       }
 
-      // Logic: Are there any references that are NOT definitions?
-      // (i.e., is this variable ever actually READ?)
-      const hasReads = [...signifier.refs].some((r) => !r.isDef);
+      // FIX: A "Read" is a reference that is neither the definition nor a write.
+      const hasReads = [...signifier.refs].some((r) => !r.isDef && !r.isWrite);
 
       if (!hasReads) {
-        let label = 'variable';
-        if (isFunction) label = 'function';
-        if (isParameter) label = 'parameter';
-        if (isMacro) label = 'macro';
-
+        const label = isFunction ? 'function' : isParameter ? 'parameter' : isMacro ? 'macro' : 'variable';
         this.diagnostics.UNUSED.push(
           Diagnostic.info(`Unused ${label} \`${signifier.name}\``, ref),
         );
