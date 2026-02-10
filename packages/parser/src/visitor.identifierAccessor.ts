@@ -102,7 +102,7 @@ export function visitIdentifierAccessor(
       this.PROCESSOR.addDiagnostic(
         'UNDECLARED_GLOBAL_REFERENCE',
         lastAccessed.range,
-        `Variable '${lastAccessed.name}' is used in global scope but not declared anywhere.`
+        `Variable '${lastAccessed.name}' is used in global scope but not declared anywhere.`,
       );
     }
     // Just set the last accessed type to ANY so that we can
@@ -113,7 +113,7 @@ export function visitIdentifierAccessor(
       this.PROCESSOR.addDiagnostic(
         'UNDECLARED_VARIABLE_REFERENCE',
         lastAccessed.range,
-        `Undeclared symbol \`${lastAccessed.name}\`.`
+        `Undeclared symbol \`${lastAccessed.name}\`.`,
       );
     }
 
@@ -394,44 +394,46 @@ function processDotAccessor(
     ctx: lastAccessed.ctx,
   };
 
-  // Reduce the available types from lastAccessed to those that
-  // are dot-accessible
   const dottableTypes = getTypesOfKind(lastAccessed.types, [
     ...withableTypes,
     'Enum',
   ]);
 
+  // FIX: Use a wider type for the local variable to allow the 'Any' fallback
+  let dottableType: WithableType;
+
   if (!dottableTypes.length) {
-    // Early return. Just set the type to ANY and move along.
-    nextAccessed.types = [visitor.ANY];
     const allTypes = getTypes(lastAccessed.types);
     const isDotAccessible =
       !allTypes.length || getTypeOfKind(allTypes, ['Any', 'Unknown', 'Mixed']);
+
     if (!isDotAccessible) {
       visitor.PROCESSOR.addDiagnostic(
         'INVALID_OPERATION',
         accessor.location!,
-        `Type does not allow dot accessors.`,
+        `Type "${allTypes.map((t) => t.kind).join('|')}" does not allow dot accessors.`,
       );
     }
-    lastAccessed.rhs &&
-      visitor.assignmentRightHandSide(lastAccessed.rhs, lastAccessed.ctx);
-    return nextAccessed;
-  }
 
-  let dottableType = dottableTypes[0];
-  if (dottableTypes.length > 1) {
-    // We may have a union of valid types, so it's helpful to know
-    // the subsequent accessor (if there is one) -- we can use it
-    // to narrow down which type is likely intended.
-    const nextAccessorName =
-      nextAccessor?.name === 'dotAccessSuffix'
-        ? identifierFrom(nextAccessor.children.identifier)?.name
-        : undefined;
-    if (nextAccessorName) {
-      dottableType =
-        dottableTypes.find((t) => t.getMember(nextAccessorName)) ||
-        dottableType;
+    dottableType = visitor.ANY as unknown as WithableType;
+
+    if (lastAccessed.rhs) {
+      visitor.assignmentRightHandSide(lastAccessed.rhs, lastAccessed.ctx);
+    }
+  } else {
+    dottableType = dottableTypes[0] as WithableType;
+    if (dottableTypes.length > 1) {
+      const nextAccessorName =
+        nextAccessor?.name === 'dotAccessSuffix'
+          ? identifierFrom(nextAccessor.children.identifier)?.name
+          : undefined;
+      if (nextAccessorName) {
+        // Narrowing logic
+        const match = dottableTypes.find((t) => t.getMember(nextAccessorName));
+        if (match) {
+          dottableType = match as WithableType;
+        }
+      }
     }
   }
 
@@ -440,7 +442,6 @@ function processDotAccessor(
   const dotAccessor = accessor.children;
   const dot = fixITokenLocation(dotAccessor.Dot[0]);
 
-  // Set the self-scope starting right after the dot operator
   visitor.PROCESSOR.scope.setEnd(dot);
   visitor.PROCESSOR.pushSelfScope(dot, dottableType, true, {
     accessorScope: true,

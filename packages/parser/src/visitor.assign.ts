@@ -138,6 +138,8 @@ export function assignVariable(
       } else if (inferredType) {
         signifier.setType(inferredType);
       }
+    } else if (signifier && !signifier.isTyped) {
+      signifier.setType(visitor.ANY);
     }
   }
   if (signifier && ref) {
