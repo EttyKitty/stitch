@@ -63,11 +63,10 @@ export class Signifier extends Flags {
   }
 
   addRef(location: Range, isDef = false, isWrite = false): Reference {
-    // Check for existing reference at this exact range to prevent "self-usage" shadowing
     for (const existing of this.refs) {
       if (existing.start.offset === location.start.offset && existing.end.offset === location.end.offset) {
-        existing.isDef = existing.isDef || isDef;
-        existing.isWrite = existing.isWrite || isWrite;
+        if (isDef) existing.isDef = true;
+        if (isWrite) existing.isWrite = true;
         return existing;
       }
     }

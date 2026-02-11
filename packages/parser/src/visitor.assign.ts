@@ -41,7 +41,6 @@ export function assignVariable(
   const fullScope = visitor.PROCESSOR.fullScope;
   const inDefinitiveSelf = variable.container === fullScope.definitiveSelf;
 
-  // 1. Find or Create the Signifier
   let signifier = variable.container.getMember(variable.name);
   let ref: Reference | undefined;
   let wasUndeclared = false;
@@ -70,27 +69,23 @@ export function assignVariable(
     }
   }
 
-  // 2. Update Metadata and References
   if (signifier) {
-    // CORE FIX: Always update flags. If these are only set during creation,
-    // symbols found via JSDoc or incremental indexing might lack them,
-    // causing the diagnostic to skip them.
-    signifier.static = !!info.static;
-    signifier.instance = !!info.instance || !info.local;
-    signifier.local = !!info.local;
+    if (info.local) signifier.local = true;
+    if (info.static) signifier.static = true;
+    if (info.instance) signifier.instance = true;
 
-    // Determine if this is the primary definition or a subsequent write
+    if (wasUndeclared && !info.local && !info.static && !info.instance) {
+      signifier.instance = true;
+    }
+
     if (!signifier.def) {
       wasUndeclared = true;
       signifier.definedAt(variable.range);
-      // Mark as both Definition and Write
       ref = signifier.addRef(variable.range, true, true);
     } else {
-      // Mark as a Write (not a definition)
       ref = signifier.addRef(variable.range, false, true);
     }
 
-    // Ensure definition is moved to the definitive self (e.g. Constructor/Create) if applicable
     ensureDefinitive(
       variable.container as WithableType,
       visitor.PROCESSOR.currentDefinitiveSelf,
@@ -99,7 +94,6 @@ export function assignVariable(
     );
   }
 
-  // 3. Handle Right-Hand Side (RHS) logic
   const assignedToFunction = functionFromRhs(rhs);
   const assignedToStructLiteral = structLiteralFromRhs(rhs);
   const assignedToArrayLiteral = arrayLiteralFromRhs(rhs);
