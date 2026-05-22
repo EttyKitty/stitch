@@ -23,6 +23,7 @@ import { activateStitchExtension } from './extension.activate.mjs';
 import { completionTriggerCharacters } from './extension.completions.mjs';
 import { GameMakerSemanticTokenProvider } from './extension.highlighting.mjs';
 import { GameMakerProject } from './extension.project.mjs';
+import { GameMakerRunner } from './extension.runner.mjs';
 import {
   activeTab,
   isSpriteTab,
@@ -31,6 +32,7 @@ import {
   showProgress,
 } from './lib.mjs';
 import { info, logger, warn } from './log.mjs';
+import path from 'node:path';
 
 export class StitchWorkspace implements vscode.SignatureHelpProvider {
   readonly semanticHighlightProvider = new GameMakerSemanticTokenProvider(this);
@@ -45,6 +47,11 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
   readonly externalChangeTracker = new ChangeTracker(this);
 
   projects: GameMakerProject[] = [];
+  /**
+   * Lightweight runners loaded immediately (no parser).
+   * Available before full parser projects are ready.
+   */
+  runners: GameMakerRunner[] = [];
 
   readonly processingFiles = new Map<string, Promise<any>>();
   readonly debouncingOnChange = new Map<string, NodeJS.Timeout>();
@@ -88,14 +95,19 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
 
   clearProjects() {
     this.projects = [];
+    this.runners = [];
     void vscode.commands.executeCommand(
       'setContext',
       'stitch.projectCount',
-      this.projects.length,
+      0,
     );
   }
 
-  async loadProject(yypPath: vscode.Uri, onDiagnostics: OnDiagnostics) {
+  async loadProject(
+    yypPath: vscode.Uri,
+    runner: GameMakerRunner,
+    onDiagnostics: OnDiagnostics,
+  ) {
     let project!: GameMakerProject;
     await vscode.window.withProgress(
       {
@@ -109,6 +121,7 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
         });
         project = await GameMakerProject.from(
           yypPath,
+          runner,
           onDiagnostics,
           (percent, message) => {
             progress.report({
@@ -127,11 +140,6 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
       },
     );
     this.projects.push(project);
-    void vscode.commands.executeCommand(
-      'setContext',
-      'stitch.projectCount',
-      this.projects.length,
-    );
     return project;
   }
 
@@ -536,4 +544,31 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
     await activateStitchExtension(this.provider, ctx);
     return this.provider;
   }
+
+  getActiveRunner(): GameMakerRunner | undefined {
+    const doc = this.getActiveDocument();
+    if (doc) {
+      const runner = this.runners.find((r) => {
+        const relative = path.relative(r.dir.absolute, doc.uri.fsPath);
+        return !relative || !relative.startsWith('..');
+      });
+      if (runner) return runner;
+    }
+    return this.runners[0];
+  }
+
+  async chooseRunner(
+    title = 'Choose a project',
+  ): Promise<GameMakerRunner | undefined> {
+    if (this.runners.length === 1) {
+      return this.runners[0];
+    }
+    const runnerName = await vscode.window.showQuickPick(
+      this.runners.map((r) => r.name),
+      { title },
+    );
+    if (!runnerName) return;
+    return this.runners.find((r) => r.name === runnerName);
+  }
+
 }

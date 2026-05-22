@@ -38,11 +38,17 @@ export class StitchIgorView implements vscode.WebviewViewProvider {
     webview.html = this.getWebviewContent(webview);
     webview.onDidReceiveMessage(async (e: IgorWebviewPosts) => {
       if (e.kind === 'open') {
-        // Go to the asset in the editor
-        const asset = this.workspace
-          .getActiveProject()
-          ?.getAssetByName(e.asset);
-        assertLoudly(asset, `Asset not found: ${e.asset}`);
+        const activeProject = this.workspace.getActiveProject();
+        let asset;
+        if (activeProject) {
+          asset = activeProject.getAssetByName(e.asset);
+        } else {
+          const activeRunner = this.workspace.getActiveRunner();
+        }
+        if (!asset) {
+          vscode.window.showWarningMessage(`Parser still loading. Cannot open asset: ${e.asset}`);
+          return;
+        }
         const file =
           e.type === 'objects' && e.event
             ? (asset.getEventByName(e.event as any) ?? asset.gmlFile)
@@ -82,7 +88,7 @@ export class StitchIgorView implements vscode.WebviewViewProvider {
     return {
       fontFamily: stitchConfig.runnerViewFontFamily,
       fontSize: stitchConfig.runnerViewFontSize,
-      ...this.lastRequest?.project.config.gameConsoleStyle,
+      ...this.lastRequest?.project.config?.gameConsoleStyle,
     };
   }
 

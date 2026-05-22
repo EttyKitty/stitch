@@ -11,20 +11,20 @@ export class StitchReleasePickerProvider {
   constructor(readonly workspace: StitchWorkspace) {}
 
   get projects() {
-    // Sort alphabetically, but with the active project first.
-    const projects = this.workspace.projects;
-    const active = this.workspace.getActiveProject();
-    projects.sort((a, b) => {
+    // Sort alphabetically, but with active runner first.
+    const runners = [...this.workspace.runners];
+    const active = this.workspace.getActiveRunner();
+    runners.sort((a, b) => {
       if (a === active) return -1;
       if (b === active) return 1;
       return a.name.localeCompare(b.name);
     });
-    return projects;
+    return runners;
   }
 
   protected async getWebviewContent() {
     const releases = await StitchReleasePickerProvider.listReleases();
-    return compile(releases, this.projects, stitchConfig.releaseNotesChannels);
+    return compile(releases, this.projects as any, stitchConfig.releaseNotesChannels);
   }
 
   protected createPanel(): vscode.WebviewPanel {
@@ -52,10 +52,9 @@ export class StitchReleasePickerProvider {
           this.panel?.dispose();
           return;
         } else if (message.type === 'setVersion') {
-          const project = await this.workspace.chooseProject();
-          if (!project) return;
-          await project.setIdeVersion(message.version);
-          // Dispose of the panel so it will be rebuilt
+          const runner = await this.workspace.chooseRunner();
+          if (!runner) return;
+          await runner.setIdeVersion(message.version);
           this.revealPanel();
         }
       },
