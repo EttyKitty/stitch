@@ -113,7 +113,7 @@ export function visitIdentifierAccessor(
       this.PROCESSOR.addDiagnostic(
         'UNDECLARED_VARIABLE_REFERENCE',
         lastAccessed.range,
-        `Undeclared symbol \`${lastAccessed.name}\`.`,
+        `Cannot find name \`${lastAccessed.name}\` in ${scope.self}.`,
       );
     }
 
