@@ -102,15 +102,29 @@ export class StitchIgorView implements vscode.WebviewViewProvider {
   kill() {
     const pid = this.runner?.pid;
     if (typeof pid !== 'number') return;
-    if (this.runner?.exitCode !== null) {
-      // Then it's already dead
-      return;
-    }
-    // Doesn't terminate on Windows...
-    if (process.platform === 'win32') {
-      spawn('taskkill', ['/pid', `${pid}`, '/f', '/t']);
-    } else {
-      this.runner.kill();
+    
+    const runnerToKill = this.runner;
+
+    try {
+      runnerToKill?.stdout.removeAllListeners();
+      runnerToKill?.stderr.removeAllListeners();
+      runnerToKill?.removeAllListeners();
+    } catch {}
+
+    this.runner = undefined; // Drop reference immediately
+
+    // Send manual exited message to webview
+    this.container?.webview.postMessage({
+      kind: 'exited',
+      code: -1, // Force exit code
+    } satisfies IgorExitedMessage);
+
+    if (runnerToKill?.exitCode === null) {
+      if (process.platform === 'win32') {
+        spawn('taskkill', ['/pid', `${pid}`, '/f', '/t']);
+      } else {
+        runnerToKill.kill();
+      }
     }
   }
 
