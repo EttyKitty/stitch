@@ -5,7 +5,6 @@
     "types": ["node", "mocha", "chai"],
     "outDir": "dist",
     "rootDir": "src",
-    "baseUrl": "src",
     "moduleResolution": "nodenext",
     "module": "nodenext",
     "experimentalDecorators": true
