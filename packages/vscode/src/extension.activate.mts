@@ -28,6 +28,7 @@ import {
   createSorter,
   findProject,
   getAssetFromRef,
+  getRelativeWorkspacePath,
   pathyFromUri,
   registerCommand,
 } from './lib.mjs';
@@ -37,6 +38,166 @@ import { GameMakerFolder } from './tree.folder.mjs';
 import { GameMakerTreeProvider } from './tree.mjs';
 import { StitchIgorView } from './webview.igor.mjs';
 import { StitchSpriteEditorProvider } from './webviews.spriteEditor.mjs';
+
+/**
+ * Scan workspace for .yyp files, pre-filter by allowedProjects,
+ * then prompt user (or auto-select from stored setting).
+ * Returns chosen yypFile URIs (0 or 1 items).
+ */
+async function selectYypFiles(): Promise<vscode.Uri[]> {
+  info('Loading projects...');
+  let yypFiles = await vscode.workspace.findFiles(`**/*.yyp`);
+  if (!yypFiles.length) {
+    warn('No .yyp files found in workspace!');
+    return [];
+  }
+
+  // Pre-filter based on allowed project config
+  const allowed = stitchConfig.allowedProjects.map((p) => p.toLowerCase());
+  let prefiltered = [...yypFiles];
+  if (allowed.length) {
+    prefiltered = prefiltered.filter((projectUri) => {
+      const path = pathyFromUri(projectUri);
+      const yypName = path.name;
+      const folderName = path.up().name;
+      return (
+        allowed.includes(yypName.toLowerCase()) ||
+        allowed.includes(folderName.toLowerCase())
+      );
+    });
+  }
+  yypFiles = prefiltered.length ? prefiltered : yypFiles;
+
+  // If stored setting matches a yyp, auto-select
+  const stored = stitchConfig.selectedProject;
+  if (stored) {
+    const storedLower = stored.toLowerCase().replace(/\\/g, '/');
+    const match = yypFiles.find((u) => {
+      const fsPathLower = u.fsPath.toLowerCase().replace(/\\/g, '/');
+      // stored is relative to workspace root; try suffix match
+      return fsPathLower.endsWith(storedLower) || fsPathLower === storedLower;
+    });
+    if (match) {
+      info('Using stored project:', stored);
+      return [match];
+    }
+    warn('Stored project not found:', stored);
+  }
+
+  if (yypFiles.length <= 1) {
+    return yypFiles;
+  }
+
+  // Multi-project: show picker
+  const chosen = await vscode.window.showQuickPick(
+    yypFiles.map((yyp) => ({
+      label: pathyFromUri(yyp).basename,
+      description: pathyFromUri(yyp).up().absolute,
+      uri: yyp,
+    })),
+    {
+      title:
+        'Stitch: Multiple GameMaker projects found! Choose a project to load.',
+    },
+  );
+  if (!chosen) return [];
+  return [chosen.uri];
+}
+
+/**
+ * Persist the chosen yyp path to workspace settings.
+ */
+async function persistProjectSelection(yypUri: vscode.Uri): Promise<void> {
+  const relative = getRelativeWorkspacePath(yypUri);
+  await stitchConfig.config.update(
+    'selectedProject',
+    relative,
+    vscode.ConfigurationTarget.Workspace,
+  );
+}
+
+/**
+ * Create a runner + full project load for a single yyp file.
+ * Registers file watchers in the background.
+ */
+async function loadSingleProject(
+  yypFile: vscode.Uri,
+  ctx: vscode.ExtensionContext,
+  workspace: StitchWorkspace,
+): Promise<void> {
+  // Phase 1: Create lightweight runner immediately (Fast)
+  let runner: GameMakerRunner;
+  try {
+    info('Creating runner for', yypFile);
+    runner = await GameMakerRunner.from(yypFile.fsPath);
+    workspace.runners.push(runner);
+    info('Runner ready for', runner.name);
+  } catch (error) {
+    logger.error('Error creating runner for', yypFile);
+    logger.error(error);
+    return;
+  }
+
+  // Update context so runner commands are available
+  void vscode.commands.executeCommand(
+    'setContext',
+    'stitch.projectCount',
+    workspace.runners.length,
+  );
+
+  // Phase 2: Load full parser project IN BACKGROUND (Non-Blocking)
+  void (async () => {
+    info('Loading full parser project', yypFile);
+    const pt = Timer.start();
+    try {
+      await workspace.loadProject(
+        yypFile,
+        runner,
+        workspace.emitDiagnostics.bind(workspace),
+      );
+      pt.seconds('Loaded project in');
+
+      // Register file watchers for this project
+      const projectFolder = pathyFromUri(yypFile).up();
+      const base = vscode.Uri.file(projectFolder.absolute);
+      const patterns = [
+        new vscode.RelativePattern(base, '*.yyp'),
+        new vscode.RelativePattern(base, '*/*/*.yy'),
+        new vscode.RelativePattern(base, '*/*/*.gml'),
+        new vscode.RelativePattern(base, '*/*/*.atlas'),
+        new vscode.RelativePattern(base, '*/*/*.png'),
+        new vscode.RelativePattern(base, 'datafiles/**/*'),
+      ];
+      const watchers = patterns.map((pattern) =>
+        vscode.workspace.createFileSystemWatcher(pattern),
+      );
+      ctx.subscriptions.push(
+        ...watchers,
+        ...watchers.map((watcher) =>
+          watcher.onDidCreate((uri) => {
+            workspace.externalChangeTracker.addChange({ uri, type: 'create' });
+          }),
+        ),
+        ...watchers.map((watcher) =>
+          watcher.onDidDelete((uri) => {
+            workspace.externalChangeTracker.addChange({ uri, type: 'delete' });
+          }),
+        ),
+        ...watchers.map((watcher) =>
+          watcher.onDidChange((uri) => {
+            workspace.externalChangeTracker.addChange({ uri, type: 'change' });
+          }),
+        ),
+      );
+    } catch (error) {
+      logger.error(error);
+      logger.error('Error loading project', yypFile);
+      showErrorMessage(
+        `Could not load project ${pathyFromUri(yypFile).basename}...`,
+      );
+    }
+  })();
+}
 
 export async function activateStitchExtension(
   workspace: StitchWorkspace,
@@ -82,122 +243,18 @@ export async function activateStitchExtension(
     });
   }
 
-  info('Loading projects...');
-  let yypFiles = await vscode.workspace.findFiles(`**/*.yyp`);
-  if (!yypFiles.length) {
-    warn('No .yyp files found in workspace!');
-  }
+  // Select yyp files (uses stored setting if available)
+  const yypFiles = await selectYypFiles();
 
-  // Pre-filter based on allowed project config
-  const allowed = stitchConfig.allowedProjects.map((p) => p.toLowerCase());
-  let prefiltered = [...yypFiles];
-  if (allowed.length) {
-    prefiltered = prefiltered.filter((projectUri) => {
-      const path = pathyFromUri(projectUri);
-      const yypName = path.name;
-      const folderName = path.up().name;
-      return (
-        allowed.includes(yypName.toLowerCase()) ||
-        allowed.includes(folderName.toLowerCase())
-      );
-    });
-  }
-  yypFiles = prefiltered.length ? prefiltered : yypFiles;
-
-  if (yypFiles.length > 1) {
-    const chosen = await vscode.window.showQuickPick(
-      yypFiles.map((yyp) => ({
-        label: pathyFromUri(yyp).basename,
-        description: pathyFromUri(yyp).up().absolute,
-        uri: yyp,
-      })),
-      {
-        title:
-          'Stitch: Multiple GameMaker projects found! Choose a project to load.',
-      },
-    );
-    if (!chosen) yypFiles.length = 0;
-    else yypFiles = [chosen.uri];
-  }
-
-  // Phase 1: Create lightweight runners immediately (Fast)
+  // Load the selected project(s)
   for (const yypFile of yypFiles) {
-    try {
-      info('Creating runner for', yypFile);
-      const runner = await GameMakerRunner.from(yypFile.fsPath);
-      workspace.runners.push(runner);
-      info('Runner ready for', runner.name);
-    } catch (error) {
-      logger.error('Error creating runner for', yypFile);
-      logger.error(error);
-    }
+    await loadSingleProject(yypFile, ctx, workspace);
   }
 
-  // Set context so runner commands are available immediately
-  void vscode.commands.executeCommand(
-    'setContext',
-    'stitch.projectCount',
-    workspace.runners.length,
-  );
-
-  // Phase 2: Load full parser projects IN BACKGROUND (Non-Blocking)
-  void (async () => {
-    const toWatch: vscode.RelativePattern[] = [];
-    for (const yypFile of yypFiles) {
-      info('Loading full parser project', yypFile);
-      const pt = Timer.start();
-      const runner = workspace.runners.find(
-        (r) => r.yypPath.absolute === pathyFromUri(yypFile).absolute,
-      );
-      try {
-        await workspace.loadProject(
-          yypFile,
-          runner!,
-          workspace.emitDiagnostics.bind(workspace),
-        );
-        pt.seconds('Loaded project in');
-        
-        const projectFolder = pathyFromUri(yypFile).up();
-        const base = vscode.Uri.file(projectFolder.absolute);
-        toWatch.push(
-          new vscode.RelativePattern(base, '*.yyp'),
-          new vscode.RelativePattern(base, '*/*/*.yy'),
-          new vscode.RelativePattern(base, '*/*/*.gml'),
-          new vscode.RelativePattern(base, '*/*/*.atlas'),
-          new vscode.RelativePattern(base, '*/*/*.png'),
-          new vscode.RelativePattern(base, 'datafiles/**/*'),
-        );
-      } catch (error) {
-        logger.error(error);
-        logger.error('Error loading project', yypFile);
-        let message = `Could not load project ${pathyFromUri(yypFile).basename}...`;
-        showErrorMessage(message);
-      }
-    }
-
-    // Register file watchers dynamically once background load done
-    const watchers = toWatch.map((pattern) =>
-      vscode.workspace.createFileSystemWatcher(pattern),
-    );
-    ctx.subscriptions.push(
-      ...watchers,
-      ...watchers.map((watcher) =>
-        watcher.onDidCreate((uri) => {
-          workspace.externalChangeTracker.addChange({ uri, type: 'create' });
-        }),
-      ),
-      ...watchers.map((watcher) =>
-        watcher.onDidDelete((uri) => {
-          workspace.externalChangeTracker.addChange({ uri, type: 'delete' });
-        }),
-      ),
-      ...watchers.map((watcher) =>
-        watcher.onDidChange((uri) => {
-          workspace.externalChangeTracker.addChange({ uri, type: 'change' });
-        }),
-      ),
-    );
-  })();
+  // Persist selection if exactly one chosen
+  if (yypFiles.length === 1) {
+    await persistProjectSelection(yypFiles[0]);
+  }
 
   const treeProvider = new GameMakerTreeProvider(workspace);
   const inspectorProvider = new GameMakerInspectorProvider(workspace);
@@ -269,6 +326,56 @@ export async function activateStitchExtension(
       'stitch.types.copyAsJsdocType',
       createCopyAsJsdocTypeCallback(workspace),
     ),
+    registerCommand('stitch.chooseProject', async () => {
+      // Find all yyp files fresh
+      let yypFiles = await vscode.workspace.findFiles(`**/*.yyp`);
+      if (!yypFiles.length) {
+        void showErrorMessage('No .yyp files found in workspace!');
+        return;
+      }
+
+      // Pre-filter
+      const allowed = stitchConfig.allowedProjects.map((p) => p.toLowerCase());
+      let prefiltered = [...yypFiles];
+      if (allowed.length) {
+        prefiltered = prefiltered.filter((projectUri) => {
+          const path = pathyFromUri(projectUri);
+          const yypName = path.name;
+          const folderName = path.up().name;
+          return (
+            allowed.includes(yypName.toLowerCase()) ||
+            allowed.includes(folderName.toLowerCase())
+          );
+        });
+      }
+      yypFiles = prefiltered.length ? prefiltered : yypFiles;
+
+      if (!yypFiles.length) {
+        void showErrorMessage(
+          'No .yyp files match the allowed projects filter.',
+        );
+        return;
+      }
+
+      const chosen = await vscode.window.showQuickPick(
+        yypFiles.map((yyp) => ({
+          label: pathyFromUri(yyp).basename,
+          description: pathyFromUri(yyp).up().absolute,
+          uri: yyp,
+        })),
+        {
+          title: 'Stitch: Choose a GameMaker project to load',
+        },
+      );
+      if (!chosen) return;
+
+      // Clear current state
+      workspace.clearProjects();
+
+      // Load the chosen project
+      await loadSingleProject(chosen.uri, ctx, workspace);
+      await persistProjectSelection(chosen.uri);
+    }),
     registerCommand(
       'stitch.run',
       async (uriOrFolder: string[] | GameMakerFolder) => {
@@ -464,8 +571,8 @@ export function findRunner(
 ): GameMakerRunner | undefined {
   if (Array.isArray(uriOrFolder) && uriOrFolder.length) {
     const targetPath = uriOrFolder[0];
-    return workspace.runners.find(r => 
-      targetPath.toLowerCase().startsWith(r.dir.absolute.toLowerCase())
+    return workspace.runners.find((r) =>
+      targetPath.toLowerCase().startsWith(r.dir.absolute.toLowerCase()),
     );
   }
   return workspace.runners[0];

@@ -8,6 +8,10 @@ class StitchConfig {
     return vscode.workspace.getConfiguration('stitch');
   }
 
+  get selectedProject(): string | null {
+    return this.config.get<string | null>('selectedProject') ?? null;
+  }
+
   get allowedProjects() {
     return this.config.get<string[]>('assets.filters.allowedProjects') || [];
   }

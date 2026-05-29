@@ -15,6 +15,11 @@ export const commands = {
     title: 'Stitch: Open GameMaker Docs',
     [$showInPalette]: true,
   },
+  'stitch.chooseProject': {
+    command: 'stitch.chooseProject',
+    title: 'Stitch: Choose Project',
+    [$showInPalette]: true,
+  },
   'stitch.newProject': {
     command: 'stitch.newProject',
     title: 'Stitch: New Project',

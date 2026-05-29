@@ -40,6 +40,10 @@
         "title": "Stitch: Open GameMaker Docs"
       },
       {
+        "command": "stitch.chooseProject",
+        "title": "Stitch: Choose Project"
+      },
+      {
         "command": "stitch.newProject",
         "title": "Stitch: New Project"
       },
@@ -323,6 +327,15 @@
     "configuration": {
       "title": "Stitch",
       "properties": {
+        "stitch.selectedProject": {
+          "title": "Selected Project",
+          "description": "Relative path to the selected .yyp file. Set automatically by the 'Stitch: Choose Project' command.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
         "stitch.assets.filters.allowedProjects": {
           "title": "Allowed Projects",
           "description": "If your VSCode Workspace includes multiple GameMaker projects you'll see a selector on load to pick which project you want to load. Optionally limit the list to GameMaker project folder names listed here. If only one matches you it will load without a selector. If none match, all projects will be listed.",
@@ -936,6 +949,9 @@
       "commandPalette": [
         {
           "command": "stitch.openDocs"
+        },
+        {
+          "command": "stitch.chooseProject"
         },
         {
           "command": "stitch.newProject"
