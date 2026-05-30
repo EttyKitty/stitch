@@ -162,6 +162,11 @@ export function typeFromParsedJsdocs(
         addMissing,
       );
       type.addReturnType(returnType);
+      if (jsdoc.returns.description) {
+        for (const t of returnType) {
+          t.description = jsdoc.returns.description;
+        }
+      }
     }
     for (const param of jsdoc.params || []) {
       const member = type.addParameter(i, param.name!.content);

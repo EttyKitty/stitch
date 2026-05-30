@@ -22,6 +22,13 @@ export function typeToHoverDetails(type: Type) {
         lines.push(`*@param* \`${param.name}\` - ${param.description}`);
       }
     }
+    if (type.returns) {
+      for (const rt of type.returns.type) {
+        if (rt.description) {
+          lines.push(`*@returns* \`${rt.toFeatherString()}\` - ${rt.description}`);
+        }
+      }
+    }
   } else if (type.kind === 'Struct') {
     const members = type
       .listMembers()
