@@ -471,7 +471,19 @@ export class Code {
       }
       // If no refs remain and was defined here, delete the signifier as well
       if (isDefinedInThisFile && !signifier.refs.size) {
-        signifier.parent.removeMember(signifier.name);
+        try {
+          signifier.parent.removeMember(signifier.name);
+        } catch (err) {
+          const parentType = signifier.parent as any;
+          logger.error(
+            `Failed to remove member "${signifier.name}" from type "${parentType?.name || parentType?.kind || 'unknown'}" (${parentType?.$tag || 'unknown'}, kind=${parentType?.kind || 'unknown'}): ${err instanceof Error ? err.message : String(err)}`,
+            `File: ${this.path.absolute}`,
+            `Asset: ${this.asset.name} (${this.asset.assetKind})`,
+            `Signifier refs remaining: ${signifier.refs.size}`,
+            `Parent has members: ${parentType?._members?.size ?? 'N/A'}`,
+          );
+          throw err;
+        }
       }
       cleared.add(signifier);
     }
