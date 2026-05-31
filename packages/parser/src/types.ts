@@ -470,7 +470,12 @@ export class Type<T extends PrimitiveName = PrimitiveName> {
     }
   }
 
-  removeMember(name: string) {
+  removeMember(name: string): void {
+    // Handle pass-through types — delegate to the underlying struct
+    if (this.kind === 'Id.Instance' || this.kind === 'Asset.GMObject') {
+      this.extends?.removeMember(name);
+      return;
+    }
     const member = this.getMember(name, true);
     if (!member) {
       return;
