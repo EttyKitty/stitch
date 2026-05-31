@@ -623,9 +623,8 @@ export class Code {
 
   protected computeUndeclaredSymbolDiagnostics() {
     this.diagnostics.UNDECLARED_VARIABLE_REFERENCE = [];
-    const undeclaredSymbols = new Set<Signifier>();
-    outer: for (const ref of this._refs) {
-      if (ref.item.def || ref.item.native || undeclaredSymbols.has(ref.item)) {
+    for (const ref of this._refs) {
+      if (ref.item.def || ref.item.native) {
         continue;
       }
       // Handle global prefixes setting
@@ -639,14 +638,13 @@ export class Code {
           ref.item.instance = false;
           ref.item.def = {};
           ref.item.describe(`Auto-declared by global prefix \`${prefix}\``);
-          continue outer;
+          continue;
         }
       }
 
       this.diagnostics.UNDECLARED_VARIABLE_REFERENCE.push(
         Diagnostic.error(`Undeclared symbol \`${ref.item.name}\``, ref, 'warn'),
       );
-      undeclaredSymbols.add(ref.item);
     }
   }
 
