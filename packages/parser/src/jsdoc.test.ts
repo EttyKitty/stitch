@@ -163,6 +163,13 @@ describe('JSDocs', function () {
     expect(parsed.self?.content).to.equal('Struct.Hello');
   });
 
+  it('can parse a self tag with a union type', function () {
+    const jsdoc = '/// @self Struct.Hello|Struct.World';
+    const parsed = parseJsdoc(jsdoc);
+    expect(parsed.kind).to.equal('self');
+    expect(parsed.self?.content).to.equal('Struct.Hello|Struct.World');
+  });
+
   it('can parse template tags', function () {
     const jsdoc = undent`
       /// @template T

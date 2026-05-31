@@ -88,7 +88,7 @@ for (const tagName of [
 }
 
 // Self (has a type but no group. Make brackets optional to be more forgiving)
-patterns.self = `${patterns.self}\\s+(?<extraBracket>\\{\\s*)?(?<type>[a-zA-Z_][a-zA-Z_0-9.]*)(?:\\s*\\})?`;
+patterns.self = `${patterns.self}\\s+(?<extraBracket>\\{\\s*)?(?<type>[a-zA-Z_][a-zA-Z_0-9.|<>]*(?:\\s+[oO][rR]\\s+[a-zA-Z_][a-zA-Z_0-9.|<>]*)*)(?:\\s*\\})?`;
 
 // Descriptions
 for (const tagName of names) {
