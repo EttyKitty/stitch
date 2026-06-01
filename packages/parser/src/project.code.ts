@@ -521,6 +521,7 @@ export class Code {
     await this.removeFromYy();
     // remove from asset's list of files
     this.asset.gmlFiles.delete(this.path.absolute.toLocaleLowerCase());
+    this.asset.invalidateGmlFilesCache();
     // remove file
     await this.path.delete();
     // reset to clear refs and diagnostics

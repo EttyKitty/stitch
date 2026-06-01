@@ -47,6 +47,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
   readonly $tag = 'Asset';
   readonly assetKind: T;
   readonly gmlFiles: Map<string, Code> = new Map();
+  private _gmlFilesArray: Code[] | undefined;
   yy!: YyData<T>;
   readonly yyPath: Pathy<YySchemas[T]>;
   readonly signifier: Signifier;
@@ -266,14 +267,21 @@ export class Asset<T extends YyResourceType = YyResourceType> {
   }
 
   get gmlFilesArray() {
-    return [...this.gmlFiles.values()].sort((a, b) => {
-      if (a.name === 'Create_0') {
-        return -1;
-      } else if (b.name === 'Create_0') {
-        return 1;
-      }
-      return 0;
-    });
+    if (!this._gmlFilesArray) {
+      this._gmlFilesArray = [...this.gmlFiles.values()].sort((a, b) => {
+        if (a.name === 'Create_0') {
+          return -1;
+        } else if (b.name === 'Create_0') {
+          return 1;
+        }
+        return 0;
+      });
+    }
+    return this._gmlFilesArray;
+  }
+
+  invalidateGmlFilesCache() {
+    this._gmlFilesArray = undefined;
   }
 
   getEventByName(name: ObjectEventName): Code | undefined {
@@ -712,6 +720,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
       new Code(this as Asset<'scripts' | 'objects'>, path);
     assert(path, 'Cannot add GML file, path does not exist');
     this.gmlFiles.set(path.absolute.toLocaleLowerCase(), gml);
+    this.invalidateGmlFilesCache();
     return gml;
   }
 
@@ -726,6 +735,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
       this.addScriptFile(children as Pathy<string>[]);
     } else if (this.assetKind === 'objects') {
       this.gmlFiles.clear();
+      this.invalidateGmlFilesCache();
       this.addObjectFile(children as Pathy<string>[]);
     } else if (this.assetKind === 'extensions') {
       const diagnostics: Diagnostic[] = [];
