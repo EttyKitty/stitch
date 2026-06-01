@@ -102,7 +102,7 @@ export class Logger {
   }
 }
 
-export const logger = new Logger('Stitch');
+export const logger = new Logger('Stitch', 'EXTENSION');
 
 export function info(...args: any[]) {
   logger.info(...args);
