@@ -461,11 +461,13 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
     children: MacroStatementCstChildren,
     ctx: VisitorContext,
   ) {
+    const ident = children.Identifier?.[0];
+    if (!ident) return;
     // Macros are just references to some expression, so set their
     // type the the type of that expression.
     // Macros are defined during global parsing, so we can assume
     // that they exist.
-    const signifier = this.FIND_ITEM_BY_NAME(children.Identifier[0].image);
+    const signifier = this.FIND_ITEM_BY_NAME(ident.image);
     assert(signifier, 'Macro should exist');
 
     // If the macro ends with a ';' then it's a statement, otherwise
@@ -518,10 +520,12 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
     children: LocalVarDeclarationCstChildren,
     ctx: VisitorContext,
   ) {
+    const nameToken = children.Identifier?.[0];
+    if (!nameToken) return;
     const docs = this.PROCESSOR.consumeJsdoc();
     const local = this.PROCESSOR.currentLocalScope;
-    const range = this.PROCESSOR.range(children.Identifier[0]);
-    const name = children.Identifier[0].image;
+    const range = this.PROCESSOR.range(nameToken);
+    const name = nameToken.image;
     return assignVariable(
       this,
       { container: local, name, range },
@@ -535,8 +539,10 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
     ctx: VisitorContext,
   ) {
     // Determine the args for ASSIGN
-    const name = children.Identifier[0].image;
-    const range = this.PROCESSOR.range(children.Identifier[0]);
+    const nameToken = children.Identifier?.[0];
+    if (!nameToken) return;
+    const name = nameToken.image;
+    const range = this.PROCESSOR.range(nameToken);
     const rhs = children.assignmentRightHandSide;
     const docs = this.PROCESSOR.consumeJsdoc();
 

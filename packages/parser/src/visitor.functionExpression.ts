@@ -165,7 +165,10 @@ export function visitFunctionExpression(
   let totalParams = 0;
   for (let i = 0; i < cstParams.length; i++) {
     const paramCtx = withCtxKind(ctx, 'functionParam');
-    const paramToken = cstParams[i].children.Identifier[0];
+    const paramToken = cstParams[i].children.Identifier?.[0];
+    if (!paramToken) {
+      continue;
+    }
     const name = paramToken.image;
     const range = this.PROCESSOR.range(paramToken);
 

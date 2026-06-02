@@ -174,7 +174,8 @@ export class GmlGlobalDeclarationsVisitor extends GmlVisitorBase {
 
     // Upsert the enum members
     for (let i = 0; i < children.enumMember.length; i++) {
-      const name = children.enumMember[i].children.Identifier[0];
+      const name = children.enumMember[i].children?.Identifier?.[0];
+      if (!name) continue;
       const range = this.PROCESSOR.range(name);
       // Does member already exist?
       const member = type.getMember(name.image) || type.addMember(name.image)!;
@@ -210,12 +211,13 @@ export class GmlGlobalDeclarationsVisitor extends GmlVisitorBase {
       let parentConstructs: StructType | undefined;
 
       if (constructorNode?.children.Identifier) {
-        // Ensure that the parent type exists
-        const parentName = constructorNode.children.Identifier[0]?.image;
+        const parentIdToken = constructorNode.children.Identifier[0];
+        if (!parentIdToken) {
+          return;
+        }
+        const parentName = parentIdToken.image;
         if (parentName) {
-          const parentNameRange = this.PROCESSOR.range(
-            constructorNode.children.Identifier[0],
-          );
+          const parentNameRange = this.PROCESSOR.range(parentIdToken);
           const parentSignifier = this.REGISTER_GLOBAL_BY_NAME(
             parentName,
             parentNameRange,
