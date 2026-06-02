@@ -60,7 +60,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
   /** For objects, their parent */
   protected _parent: Asset<'objects'> | undefined = undefined;
 
-  protected initalized = {
+  protected initialized = {
     globals: false,
     locals: false,
   };
@@ -682,30 +682,30 @@ export class Asset<T extends YyResourceType = YyResourceType> {
   updateGlobals(initial = false) {
     this.updateParent();
     // Ensure parent is updated first
-    if (initial && !this.initalized.globals && this.parent) {
+    if (initial && !this.initialized.globals && this.parent) {
       this.parent.updateGlobals(initial);
-    } else if (initial && this.initalized.globals) {
+    } else if (initial && this.initialized.globals) {
       // Already initialized by a child
       return;
     }
     for (const gml of this.gmlFilesArray) {
       gml.updateGlobals();
     }
-    this.initalized.globals = true;
+    this.initialized.globals = true;
   }
 
   updateAllSymbols(initial = false) {
     // Ensure parent is updated first
-    if (initial && !this.initalized.locals && this.parent) {
+    if (initial && !this.initialized.locals && this.parent) {
       this.parent.updateAllSymbols(initial);
-    } else if (initial && this.initalized.locals) {
+    } else if (initial && this.initialized.locals) {
       // Already initialized by a child
       return;
     }
     for (const gml of this.gmlFilesArray) {
       gml.updateAllSymbols();
     }
-    this.initalized.locals = true;
+    this.initialized.locals = true;
   }
 
   updateDiagnostics() {
