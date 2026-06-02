@@ -264,7 +264,8 @@ export class Reference extends Range {
 
   get itemNamePattern(): RegExp {
     if (!this._itemNamePattern) {
-      this._itemNamePattern = new RegExp(`\\b(?<name>${this.item.name})\\b`);
+      const escaped = this.item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      this._itemNamePattern = new RegExp(`\\b(?<name>${escaped})\\b`);
     }
     return this._itemNamePattern;
   }

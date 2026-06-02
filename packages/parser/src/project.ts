@@ -351,7 +351,7 @@ export class Project {
     filePath: string,
     name?: string,
   ): { filePath: string; name: string } {
-    filePath.replace(/[/\\]+$/, '/').replace(/\/$/, '');
+    filePath = filePath.replace(/[/\\]+$/, '').replace(/\/+$/, '');
     if (!name) {
       ({ folder: filePath, name } =
         filePath.match(/^(?<folder>.*)[/\\](?<name>[^/\\]+)$/)?.groups || {});
@@ -366,11 +366,11 @@ export class Project {
   }
 
   findIncludedFile(filePath: string, name?: string) {
-    ({ filePath, name } = this.parseIncludedFilePath(filePath, name));
+    const resolved = this.parseIncludedFilePath(filePath, name);
     return this.datafiles.find(
       (f) =>
-        f.name.toLowerCase() === name!.toLowerCase() &&
-        f.filePath.toLowerCase() === filePath.toLowerCase(),
+        f.name.toLowerCase() === resolved.name.toLowerCase() &&
+        f.filePath.toLowerCase() === resolved.filePath.toLowerCase(),
     );
   }
 
