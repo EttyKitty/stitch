@@ -67,7 +67,6 @@ export function visitFunctionExpression(
     }
     if (nameLocation && signifier && !signifier.def) {
       signifier?.definedAt(nameLocation);
-      signifier?.addRef(nameLocation!, true);
     }
   }
 
