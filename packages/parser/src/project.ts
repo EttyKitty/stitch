@@ -1090,7 +1090,7 @@ export class Project {
     /** A random location in the list where this new folder should be put,
      * to reduce git conflicts.*/
     const insertAt = Math.max(
-      Math.floor(Math.random() * folders.length - 1),
+      Math.floor(Math.random() * (folders.length - 1)),
       0,
     );
     for (let i = 0; i < parts.length; i++) {
