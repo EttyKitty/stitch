@@ -246,15 +246,15 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
     if (!document) {
       return;
     }
-    const offset = document.offsetAt(position);
     const file = this.getGmlFile(document);
     if (!file) {
-      warn(`Could not find file for ${document}`);
+      warn(`Could not find file for ${document.fileName}`);
       return;
     }
+    const offset = document.offsetAt(position);
     const ref = file.getReferenceAt(offset);
     if (!ref) {
-      warn(`Could not find reference at ${offset}`);
+      warn(`Could not find reference at ${offset} in ${document.fileName}`);
       return;
     }
     return ref;

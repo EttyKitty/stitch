@@ -489,14 +489,9 @@ export class Project {
       for (const obj of this.assets.values()) {
         if (!isAssetOfKind(obj, 'objects')) continue;
         if (!obj.sprite) continue;
-        console.log(
-          'Checking old sprite name',
-          obj.sprite.name,
-          asset.name,
-          newAsset.name,
-        );
+        logger.info('Checking old sprite name', {obj: obj.sprite.name, old: asset.name, new: newAsset.name});
         if (obj.sprite?.name === asset.name) {
-          console.log('UPDATING SPRITE');
+          logger.info('Updating sprite');
           obj.sprite = newAsset;
         }
       }
