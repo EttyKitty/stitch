@@ -501,7 +501,7 @@ export class Project {
     await this.removeAssetByName(from);
 
     // Fully process the change
-    await this.initiallyParseAssetCode([newAsset]);
+    this.initiallyParseAssetCode([newAsset]);
 
     // Update the code from all refs to have the new name
     await this.renameSignifier(asset.signifier, to);
@@ -1184,7 +1184,7 @@ export class Project {
     }
     const addedAssets = await Promise.all(resourceWaits);
     options?.onLoadProgress?.(1, `Loaded ${this.assets.size} resources`);
-    logger.log(`Loaded ${this.assets.size} resources in ${Date.now() - t}ms`);
+    logger.info(`Loaded ${this.assets.size} resources in ${Date.now() - t}ms`);
     return addedAssets.filter((x) => x) as Asset[];
   }
 
@@ -1234,7 +1234,7 @@ export class Project {
    * back on the included spec if necessary.
    */
   protected async loadGmlSpec(): Promise<void> {
-    logger.log(`Loading GML spec...`);
+    logger.info(`Loading GML spec...`);
     const t = Date.now();
 
     this.self = new Type('Struct').named('global') as StructType;
@@ -1258,7 +1258,7 @@ export class Project {
     });
     this.native = await Native.from(specFiles, this.self, this.types);
 
-    logger.log(`Loaded GML spec in ${Date.now() - t}ms`);
+    logger.info(`Loaded GML spec in ${Date.now() - t}ms`);
   }
 
   /**
@@ -1266,7 +1266,7 @@ export class Project {
    * on disk) and add/remove any resources.
    */
   async reloadYyp() {
-    logger.log(`Reloading YYP...`);
+    logger.info(`Reloading YYP...`);
     const t = Date.now();
 
     // Update the YYP and identify new/deleted assets
@@ -1288,19 +1288,19 @@ export class Project {
 
     // Add new assets
     const newAssets = await this.loadAssets();
-    await this.initiallyParseAssetCode(newAssets);
+    this.initiallyParseAssetCode(newAssets);
 
     // Try to keep anything that got touched *clean*
     this.drainDirtyFileUpdateQueue();
 
-    logger.log(`Reloaded YYP in ${Date.now() - t}ms`);
+    logger.info(`Reloaded YYP in ${Date.now() - t}ms`);
   }
 
   /**
    * @internal
    * Initialize a collection of new assets by parsing their GML */
   initiallyParseAssetCode(assets: Asset[]) {
-    logger.log(`Parsing code...`);
+    logger.info(`Parsing code...`);
     const t = Date.now();
 
     // Do scripts before objects
@@ -1362,7 +1362,7 @@ export class Project {
       asset.updateDiagnostics();
     }
 
-    logger.log(`Parsed code in ${Date.now() - t}ms`);
+    logger.info(`Parsed code in ${Date.now() - t}ms`);
   }
 
   protected async initialize(options?: ProjectOptions): Promise<void> {
@@ -1389,6 +1389,8 @@ export class Project {
       this.loadHelpLinks(),
     ]);
 
+    options?.onLoadProgress?.(1, 'About to load assets...');
+
     const assets = await this.loadAssets(options);
 
     // Discover all globals
@@ -1397,7 +1399,7 @@ export class Project {
     // loading.
     options?.onLoadProgress?.(1, 'Parsing resource code...');
 
-    await this.initiallyParseAssetCode(assets);
+    this.initiallyParseAssetCode(assets);
   }
 
   /**

@@ -462,7 +462,6 @@ export class Code {
         if (this === symbolRef.file) {
           signifier.refs.delete(symbolRef);
         } else {
-          logger.info(`Flagging ${symbolRef.file.path.basename} as dirty because of symbol "${signifier.name}" defined in ${this.path.basename}`);
           symbolRef.file.dirty = true;
         }
       }
