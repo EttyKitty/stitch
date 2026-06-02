@@ -39,7 +39,7 @@ export class Native {
     const throws = new Signifier(this.globalSelf, 'throw', throwsType);
     this.globalSelf.addMember(throws);
     this.types.set('Function.throw', throwsType);
-    throws.def = {};
+    throws.def = undefined;
     throws.native = 'Base';
 
     // The `static_get` function just returns a blank Struct type instead
@@ -62,7 +62,7 @@ export class Native {
     );
     this.globalSelf.addMember(staticGet);
     this.types.set('Function.static_get', staticGetType);
-    staticGet.def = {};
+    staticGet.def = undefined;
     staticGet.native = 'Base';
 
     // The `display_get_frequency` function is not in the spec, so add it manually.
@@ -78,7 +78,7 @@ export class Native {
     );
     this.globalSelf.addMember(displayGetFrequency);
     this.types.set('Function.display_get_frequency', displayGetFrequencyType);
-    displayGetFrequency.def = {};
+    displayGetFrequency.def = undefined;
     displayGetFrequency.native = 'Base';
 
     // Process all of the found specs

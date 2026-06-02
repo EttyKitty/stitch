@@ -282,7 +282,7 @@ export class Code {
     for (const signifier of allSignifiers) {
       if (
         !uniqueSignifiers.has(signifier.name) &&
-        (signifier.def || signifier.native)
+        (signifier.def || signifier.native || signifier.asset || signifier.macro)
       ) {
         uniqueSignifiers.set(signifier.name, signifier);
       }
@@ -625,22 +625,24 @@ export class Code {
   protected computeUndeclaredSymbolDiagnostics() {
     this.diagnostics.UNDECLARED_VARIABLE_REFERENCE = [];
     for (const ref of this._refs) {
-      if (ref.item.def || ref.item.native) {
+      if (ref.item.def || ref.item.native || ref.item.asset || ref.item.macro) {
         continue;
       }
-      // Handle global prefixes setting
-      const prefixes =
-        this.project.options?.settings?.autoDeclareGlobalsPrefixes || [];
+      const prefixes = this.project.options?.settings?.autoDeclareGlobalsPrefixes || [];
+      let isAutoDeclared = false;
       for (const prefix of prefixes) {
         if (ref.item.name.startsWith(prefix)) {
-          // Then mark it as *global* and *declared*
           ref.item.global = true;
           ref.item.local = false;
           ref.item.instance = false;
-          ref.item.def = {};
+          ref.item.def = undefined;
           ref.item.describe(`Auto-declared by global prefix \`${prefix}\``);
-          continue;
+          isAutoDeclared = true;
+          break;
         }
+      }
+      if (isAutoDeclared) {
+        continue;
       }
 
       this.diagnostics.UNDECLARED_VARIABLE_REFERENCE.push(

@@ -1246,7 +1246,7 @@ export class Project {
     this.symbol = new Signifier(this.self, 'global', this.self);
     this.symbol.global = true;
     this.symbol.writable = false;
-    this.symbol.def = {};
+    this.symbol.def = undefined;
 
     let runtimeVersion: string | undefined;
     // Check for a stitch config file that specifies the runtime version.

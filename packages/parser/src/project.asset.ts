@@ -76,7 +76,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
 
     // Create the symbol
     this.signifier = new Signifier(this.project.self, this.name);
-    this.signifier.def = {};
+    this.signifier.def = undefined;
     this.signifier.global = true;
     this.signifier.asset = true;
 
@@ -769,7 +769,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
             signifier.macro = true;
             signifier.global = true;
             signifier.writable = false;
-            signifier.def = {};
+            signifier.def = undefined;
 
             this.project.self.addMember(signifier);
           } catch (err) {
@@ -807,7 +807,8 @@ export class Asset<T extends YyResourceType = YyResourceType> {
             const signifier = new Signifier(this.project.self, func.name, type);
             signifier.global = true;
             signifier.writable = false;
-            signifier.def = {};
+            signifier.def = undefined;
+            signifier.native = 'Extension';
             this.project.self.addMember(signifier);
             this.project.types.set(`Function.${func.externalName}`, type);
           } catch (err) {

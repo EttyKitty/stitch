@@ -24,7 +24,7 @@ export class Signifier extends Flags {
    * `true`. Otherwise `undefined` is interpreted to mean that this thing
    * does not have a definite declaration.
    */
-  protected _def: Range | { file?: undefined } | undefined = undefined;
+  protected _def: Range | undefined = undefined;
   refs = new Set<Reference>();
 
   constructor(
@@ -83,16 +83,11 @@ export class Signifier extends Flags {
     this._def = undefined;
   }
 
-  get def(): Range | { file?: undefined } | undefined {
+  get def(): Range | undefined {
     return this._def;
   }
-  set def(location: Range | { file?: undefined }) {
-    assert(location, 'Cannot set def to undefined');
-    if (this._def || this.native) {
-      // Then we have already set a declaration location, so we should
-      // not be setting it again.
-      return;
-    }
+  set def(location: Range | undefined) {
+    if (this._def || this.native) return;
     this._def = location;
   }
 
@@ -106,9 +101,6 @@ export class Signifier extends Flags {
   }
   set native(nativeModule: string | undefined) {
     this._native = nativeModule;
-    if (nativeModule) {
-      this._def = {};
-    }
   }
 
   describe(description: string | undefined): this {
