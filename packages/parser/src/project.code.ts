@@ -462,6 +462,7 @@ export class Code {
         if (this === symbolRef.file) {
           signifier.refs.delete(symbolRef);
         } else {
+          logger.info(`Flagging ${symbolRef.file.path.basename} as dirty because of symbol "${signifier.name}" defined in ${this.path.basename}`);
           symbolRef.file.dirty = true;
         }
       }
@@ -513,14 +514,11 @@ export class Code {
   }
 
   async remove() {
-    // update yy file
     await this.removeFromYy();
-    // remove from asset's list of files
     this.asset.gmlFiles.delete(this.path.absolute.toLocaleLowerCase());
     this.asset.invalidateGmlFilesCache();
     // remove file
     await this.path.delete();
-    // reset to clear refs and diagnostics
     this.reset();
   }
 
@@ -529,14 +527,15 @@ export class Code {
    * provide new content to use instead of reading from disk.
    */
   async reload(content?: string, options?: { reloadDirty?: boolean }) {
+    logger.info('Code.reload start', { file: this.path.basename });
     await this.parse(content);
     this.updateGlobals();
     this.updateAllSymbols();
     this.updateDiagnostics();
-    // Re-run diagnostics on everything that ended up dirty due to the changes
     if (options?.reloadDirty) {
       this.project.drainDirtyFileUpdateQueue();
     }
+    logger.info('Code.reload done', { file: this.path.basename });
   }
 
   protected discoverEventInheritanceWarnings() {
