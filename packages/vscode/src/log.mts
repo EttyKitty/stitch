@@ -67,12 +67,12 @@ export class Logger {
       }
       return arg;
     });
-    const components = [type.toUpperCase(), timestamp];
+    const components = [timestamp, type.toUpperCase()];
     if (this.prefix) {
       components.push(`[${this.prefix}]`);
     }
     components.push(...args);
-    this.output.appendLine(components.join(' '));
+    this.output.appendLine(components.join(' | '));
     console[type](this.channel, ...components);
   }
 
