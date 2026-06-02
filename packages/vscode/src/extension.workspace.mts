@@ -406,28 +406,27 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
             this.onChangeDoc(doc);
           }, stitchConfig.reprocessOnTypeDelay),
         );
+        logger.info(`Skipped processing file ${doc.fileName}`);
         return;
       }
     }
 
     if (this.processingFiles.has(doc.uri.fsPath)) {
-      logger.info('Already processing file', doc.uri.fsPath);
+      logger.info(`Already processing file ${doc.fileName}`);
+      clearTimeout(this.debouncingOnChange.get(doc.uri.fsPath));
       return;
     }
 
+    logger.info(`Started processing file ${doc.fileName}`);
+
     this.diagnosticCollection.delete(doc.uri);
-    // Add the processing promise to a map so
-    // that other functionality can wait for it
-    // to complete.
-    const updateWait = StitchWorkspace.provider.updateFile(doc).finally(() => {
-      // Semantic highlighting is normally updated by VSCode
-      // upon change. But since we're delaying processing of the
-      // file, we need to manually trigger a refresh.
+    const promise = StitchWorkspace.provider.updateFile(doc);
+    this.processingFiles.set(doc.uri.fsPath, promise);
+    promise.finally(() => {
+      this.processingFiles.delete(doc.uri.fsPath);
       this.semanticHighlightProvider.refresh();
+      logger.info(`Done processing file ${doc.fileName}`);
     });
-    this.processingFiles.set(doc.uri.fsPath, updateWait);
-    await updateWait;
-    this.processingFiles.delete(doc.uri.fsPath);
   }
 
   async createNewProject() {
