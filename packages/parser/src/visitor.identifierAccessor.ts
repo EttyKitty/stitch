@@ -414,29 +414,26 @@ function processDotAccessor(
         accessor.location!,
         `Dot access on ${allTypes.map((t) => t.kind).join('|') || 'unknown'} type is unverified.`,
       );
-
-      const nextAccessed: LastAccessed = {
-        range: Range.fromCst(visitor.PROCESSOR.file, accessor.location!),
-        ctx: lastAccessed.ctx,
-      };
-      nextAccessed.types = [visitor.ANY];
-      if (lastAccessed.rhs) {
-        visitor.assignmentRightHandSide(lastAccessed.rhs, lastAccessed.ctx);
-      }
-      return nextAccessed;
+    } else {
+      visitor.PROCESSOR.addDiagnostic(
+        'INVALID_OPERATION',
+        accessor.location!,
+        `Type "${allTypes.map((t) => t.kind).join('|')}" does not allow dot accessors.`,
+      );
     }
 
-    visitor.PROCESSOR.addDiagnostic(
-      'INVALID_OPERATION',
-      accessor.location!,
-      `Type "${allTypes.map((t) => t.kind).join('|')}" does not allow dot accessors.`,
-    );
-
-    dottableType = visitor.ANY as unknown as WithableType;
-
+    const nextAccessed: LastAccessed = {
+      range: Range.fromCst(visitor.PROCESSOR.file, accessor.location!),
+      ctx: lastAccessed.ctx,
+    };
+  
+    nextAccessed.types = [visitor.ANY];
+  
     if (lastAccessed.rhs) {
       visitor.assignmentRightHandSide(lastAccessed.rhs, lastAccessed.ctx);
     }
+
+    return nextAccessed;
   } else {
     dottableType = dottableTypes[0] as WithableType;
     if (dottableTypes.length > 1) {
