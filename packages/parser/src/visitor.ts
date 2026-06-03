@@ -589,7 +589,13 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
       ctx.signifier?.getTypeByKind('Struct') ||
       structFromDocs ||
       this.PROCESSOR.createStruct(children.StartBrace[0], children.EndBrace[0]);
-    ctx.signifier?.setType(struct);
+    const wouldOverwriteDefinitive =
+      !!ctx.signifier &&
+      ctx.signifier.definitive &&
+      this.PROCESSOR.currentDefinitiveSelf !== ctx.signifier.parent;
+    if (!wouldOverwriteDefinitive) {
+      ctx.signifier?.setType(struct);
+    }
     ctx.signifier = undefined;
     ctx.docs = undefined;
 
@@ -891,8 +897,12 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
         }
       }
     }
-    if (ctx.signifier) {
-      ctx.signifier.setType(ctx.docs?.type || arrayType);
+    const wouldOverwriteDefinitive =
+      !!ctx.signifier &&
+      ctx.signifier.definitive &&
+      this.PROCESSOR.currentDefinitiveSelf !== ctx.signifier.parent;
+    if (!wouldOverwriteDefinitive) {
+      ctx.signifier?.setType(ctx.docs?.type || arrayType);
     }
     return arrayType;
   }

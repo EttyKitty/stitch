@@ -114,8 +114,13 @@ export function assignVariable(
       visitor.PROCESSOR.project.types,
     );
     const forceOverride = info.docs?.jsdoc.kind === 'type';
+    const wouldOverwriteDefinitive =
+      !!signifier && signifier.definitive && !inDefinitiveSelf;
 
-    if (signifier && (!signifier.isTyped || wasUndeclared || forceOverride)) {
+    if (
+      signifier &&
+      (!signifier.isTyped || wasUndeclared || (forceOverride && !wouldOverwriteDefinitive))
+    ) {
       if (info.docs) {
         signifier.describe(info.docs.jsdoc.description);
         signifier.setType(
