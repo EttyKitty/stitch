@@ -39,41 +39,40 @@ export class Logger {
   }
 
   protected emit(type: 'debug' | 'info' | 'warn' | 'error', ...args: any[]) {
-    const timestamp = new Date().toISOString().replace(/^.*T(.*)Z$/, '$1');
-    args = args.map((arg) => {
+    const processedArgs = args.map((arg) => {
       const isObject = arg && typeof arg === 'object';
       if (isObject && 'uri' in arg && 'fsPath' in arg.uri) {
-        // Then this is probably a text document
-        // convert it to a URI
         arg = arg.uri;
       }
       if (isObject && 'fsPath' in arg) {
-        // change arg to a pathy object
         arg = arg.fsPath;
       }
       if (isObject && arg instanceof Pathy) {
-        // Log the path relative to the workspace root
-        return arg.relativeFrom(
+        arg = arg.relativeFrom(
           vscode.workspace.workspaceFolders![0].uri.fsPath,
         );
       }
       if (isObject && arg instanceof Error) {
-        return stringifyError(arg, true);
+        arg = stringifyError(arg, true);
       }
       if (isObject && arg.toString() === '[object Object]') {
         try {
-          return JSON.stringify(arg);
+          arg = JSON.stringify(arg);
         } catch {}
       }
       return arg;
     });
-    const components = [timestamp, type.toUpperCase()];
+  
+    const time = new Date().toISOString().replace(/^.*T(.*)Z$/, '$1');
+    const level = type.toUpperCase();
+    const metadata = [time, level];
     if (this.prefix) {
-      components.push(`[${this.prefix}]`);
+      metadata.push(`[${this.prefix}]`);
     }
-    components.push(...args);
-    this.output.appendLine(components.join(' | '));
-    console[type](this.channel, ...components);
+    const message = processedArgs.join(' ');
+    const line = [...metadata, message].join(' | ');
+    this.output.appendLine(line);
+    console[type](this.channel, ...metadata, ...processedArgs);
   }
 
   log(...args: any[]) {

@@ -11,19 +11,19 @@
     "startline": {
       "patterns": [
         {
-          "match": "^(?:(WARN)|(INFO)|(ERROR))\\s+(?<time>[^\\s]+)(?:\\s+(?<prefix>\\[.*?\\]))?\\s+(?<message>.*)$",
+          "match": "^(?<time>[^\\s]+)\\s+\\|\\s+(?:(WARN)|(INFO)|(ERROR))(?:\\s+\\|\\s+(?<prefix>\\[.*?\\]))?\\s+\\|\\s+(?<message>.*)$",
           "captures": {
             "1": {
-              "name": "token.warn-token.stitch-logs"
+              "name": "comment.line.stitch-logs"
             },
             "2": {
-              "name": "token.info-token.stitch-logs"
+              "name": "token.warn-token.stitch-logs"
             },
             "3": {
-              "name": "token.error-token.stitch-logs"
+              "name": "token.info-token.stitch-logs"
             },
             "4": {
-              "name": "comment.line.stitch-logs"
+              "name": "token.error-token.stitch-logs"
             },
             "5": {
               "name": "variable.other.stitch-logs"
