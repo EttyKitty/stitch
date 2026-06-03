@@ -54,9 +54,9 @@ export function assignVariable(
 
       if (!inDefinitiveSelf && !info.local && !info.static && !isAnonymousStruct) {
         visitor.PROCESSOR.addDiagnostic(
-          'UNDECLARED_GLOBAL_REFERENCE',
+          'IMPLICIT_CREATION',
           variable.range,
-          `Variable '${variable.name}' is being implicitly created.`,
+          `Property '${variable.name}' is being implicitly created.`,
         );
       }
       signifier = variable.container.addMember(variable.name);
