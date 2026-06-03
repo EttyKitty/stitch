@@ -186,9 +186,7 @@ export class Asset<T extends YyResourceType = YyResourceType> {
     assert(isAssetOfKind(this, 'objects'), 'Can only get sprites from objects');
     const yy = this.yy as YyObject;
     const spriteName = yy.spriteId?.name;
-    const sprite = spriteName
-      ? this.project.getAssetByName(spriteName)
-      : undefined;
+    const sprite = this.project.getAssetByName(spriteName)
     if (spriteName && !sprite) {
       logger.warn(`Sprite ${spriteName} has no asset`);
     }

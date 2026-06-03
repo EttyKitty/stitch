@@ -24,9 +24,7 @@ export async function importAssets(
   // Identify all assets we want to import
   const intendedImports = new Map<string, Asset>();
   if (options.sourceAsset) {
-    const asset = sourceProject.getAssetByName(options.sourceAsset, {
-      assertExists: true,
-    });
+    const asset = sourceProject.getAssetByNameOrThrow(options.sourceAsset);
     intendedImports.set(asset.name, asset);
   } else {
     for (const [name, asset] of sourceProject.assets) {
@@ -207,11 +205,7 @@ function updateMissingDeps(
   const newMissingDeps: Asset[] = [];
   const addMissingDep = (dep: Dependency) => {
     if (!missingDeps.has(dep)) {
-      newMissingDeps.push(
-        sourceProject.getAssetByName(dep.requirement.name, {
-          assertExists: true,
-        }),
-      );
+      newMissingDeps.push(sourceProject.getAssetByNameOrThrow(dep.requirement.name));
       missingDeps.add(dep);
     }
   };

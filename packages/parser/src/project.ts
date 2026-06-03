@@ -237,20 +237,37 @@ export class Project {
   }
 
   /**
-   * Since GameMaker assets are global they must have unique names independent of their type. Find an asset give it's name. Note that this is case-insensitive!
-   * @param name The name of the asset to find, case-insensitive.
+   * Find an asset by name. Returns `undefined` if not found.
+   * Names are matched case-insensitively.
    */
-  getAssetByName<Assert extends boolean>(
-    name: string | undefined,
-    options?: { assertExists: Assert },
-  ): Assert extends true ? Asset : Asset | undefined {
-    assert(name || !options?.assertExists, 'No asset name provided');
-    if (!name) {
-      return undefined as Assert extends true ? Asset : Asset | undefined;
-    }
-    const asset = this.assets.get(name.toLocaleLowerCase());
-    assert(asset || !options?.assertExists, `Asset "${name}" does not exist.`);
-    return asset as Assert extends true ? Asset : Asset | undefined;
+  getAssetByName(name: string | undefined): Asset | undefined {
+    return this.tryGetAssetByName(name);
+  }
+  
+  /**
+   * Find an asset by name, asserting it exists.
+   * Throws if the asset is not found or no name is given.
+   */
+  getAssetByNameOrThrow(name: string | undefined): Asset {
+    return this.assertGetAssetByName(name);
+  }
+  
+  /**
+   * Internal: find an asset by name, returning undefined if missing.
+   */
+  private tryGetAssetByName(name: string | undefined): Asset | undefined {
+    if (!name) return undefined;
+    return this.assets.get(name.toLocaleLowerCase());
+  }
+  
+  /**
+   * Internal: find an asset by name, asserting existence.
+   */
+  private assertGetAssetByName(name: string | undefined): Asset {
+    assert(name, 'No asset name provided');
+    const asset = this.tryGetAssetByName(name);
+    assert(asset, `Asset "${name}" does not exist.`);
+    return asset;
   }
 
   /**
@@ -414,7 +431,7 @@ export class Project {
    */
   @sequential
   async renameAsset(from: string, to: string) {
-    const asset = this.getAssetByName(from, { assertExists: true });
+    const asset = this.getAssetByNameOrThrow(from);
     assertIsValidIdentifier(to);
     const toAsset = this.getAssetByName(to);
     assert(!toAsset, `Cannot rename. An asset named "${to}" already exists`);
@@ -544,7 +561,7 @@ export class Project {
 
   @sequential
   async duplicateAsset(sourceName: string, newPath: string) {
-    const source = this.getAssetByName(sourceName, { assertExists: true });
+    const source = this.getAssetByNameOrThrow(sourceName);
     const parsed = await this.parseNewAssetPath(newPath);
     assert(parsed, `Invalid new asset path: ${newPath}`);
     // Copy all files in the source's directory to a new directory named
