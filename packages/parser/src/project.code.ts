@@ -380,6 +380,7 @@ export class Code {
   protected clearAllDiagnostics() {
     this.diagnostics = {
       GLOBAL_SELF: [],
+      IMPLICIT_CREATION: [],
       INVALID_OPERATION: [],
       JSDOC_MISMATCH: [],
       MISSING_EVENT_INHERITED: [],
@@ -388,9 +389,9 @@ export class Code {
       TOO_MANY_ARGUMENTS: [],
       UNDECLARED_GLOBAL_REFERENCE: [],
       UNDECLARED_VARIABLE_REFERENCE: [],
+      UNKNOWN_MEMBER_ACCESS: [],
       JSDOC: [],
       UNUSED: [],
-      IMPLICIT_CREATION: [],
     };
   }
 

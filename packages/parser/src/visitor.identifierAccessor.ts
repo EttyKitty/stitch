@@ -404,16 +404,33 @@ function processDotAccessor(
 
   if (!dottableTypes.length) {
     const allTypes = getTypes(lastAccessed.types);
-    const isDotAccessible =
-      !allTypes.length || getTypeOfKind(allTypes, ['Any', 'Unknown', 'Mixed']);
+    const isUnknown =
+      !allTypes.length ||
+      getTypeOfKind(allTypes, ['Any', 'Unknown', 'Mixed']);
 
-    if (!isDotAccessible) {
+    if (isUnknown) {
       visitor.PROCESSOR.addDiagnostic(
-        'INVALID_OPERATION',
+        'UNKNOWN_MEMBER_ACCESS',
         accessor.location!,
-        `Type "${allTypes.map((t) => t.kind).join('|')}" does not allow dot accessors.`,
+        `Dot access on ${allTypes.map((t) => t.kind).join('|') || 'unknown'} type is unverified.`,
       );
+
+      const nextAccessed: LastAccessed = {
+        range: Range.fromCst(visitor.PROCESSOR.file, accessor.location!),
+        ctx: lastAccessed.ctx,
+      };
+      nextAccessed.types = [visitor.ANY];
+      if (lastAccessed.rhs) {
+        visitor.assignmentRightHandSide(lastAccessed.rhs, lastAccessed.ctx);
+      }
+      return nextAccessed;
     }
+
+    visitor.PROCESSOR.addDiagnostic(
+      'INVALID_OPERATION',
+      accessor.location!,
+      `Type "${allTypes.map((t) => t.kind).join('|')}" does not allow dot accessors.`,
+    );
 
     dottableType = visitor.ANY as unknown as WithableType;
 

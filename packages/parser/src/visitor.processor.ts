@@ -17,11 +17,12 @@ import { assert } from './util.js';
 
 export const diagnosticCollections = [
   'GLOBAL_SELF',
-  'UNDECLARED_GLOBAL_REFERENCE',
+  'IMPLICIT_CREATION',
   'INVALID_OPERATION',
   'JSDOC_MISMATCH',
-  'IMPLICIT_CREATION',
+  'UNDECLARED_GLOBAL_REFERENCE',
   'UNDECLARED_VARIABLE_REFERENCE',
+  'UNKNOWN_MEMBER_ACCESS',
 ] satisfies DiagnosticCollectionName[];
 
 export class SignifierProcessor {

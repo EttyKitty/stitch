@@ -6,17 +6,18 @@ export type DiagnosticSeverity = 'error' | 'warning' | 'info';
 
 export interface DiagnosticCollections {
   GLOBAL_SELF: Diagnostic[];
+  IMPLICIT_CREATION: Diagnostic[];
   INVALID_OPERATION: Diagnostic[];
+  JSDOC: Diagnostic[];
   JSDOC_MISMATCH: Diagnostic[];
   MISSING_EVENT_INHERITED: Diagnostic[];
   MISSING_REQUIRED_ARGUMENT: Diagnostic[];
   SYNTAX_ERROR: Diagnostic[];
   TOO_MANY_ARGUMENTS: Diagnostic[];
-  UNDECLARED_VARIABLE_REFERENCE: Diagnostic[];
   UNDECLARED_GLOBAL_REFERENCE: Diagnostic[];
-  JSDOC: Diagnostic[];
+  UNDECLARED_VARIABLE_REFERENCE: Diagnostic[];
+  UNKNOWN_MEMBER_ACCESS: Diagnostic[];
   UNUSED: Diagnostic[];
-  IMPLICIT_CREATION: Diagnostic[];
 }
 export type DiagnosticCollectionName = keyof DiagnosticCollections;
 
