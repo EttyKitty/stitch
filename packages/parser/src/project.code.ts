@@ -641,7 +641,7 @@ export class Code {
       }
 
       this.diagnostics.UNDECLARED_VARIABLE_REFERENCE.push(
-        Diagnostic.error(`Undeclared symbol \`${ref.item.name}\``, ref, 'warn'),
+        Diagnostic.error(`Cannot find name \`${ref.item.name}\``, ref, 'warn'),
       );
     }
   }
