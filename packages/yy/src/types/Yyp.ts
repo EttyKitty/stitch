@@ -17,13 +17,13 @@ export const yypResourceIdSchema = z.object({
 
 /** A 'Resource' is a an asset like a sprite, object, script, and so on. */
 export type YypResource = z.infer<typeof yypResourceSchema>;
-const yypResourceSchema = z.object({
+const yypResourceSchema = z.looseObject({
   id: yypResourceIdSchema,
   order: z.number().optional(),
 });
 
 export type YypOption = z.infer<typeof yypOptionSchema>;
-const yypOptionSchema = z.object({
+const yypOptionSchema = z.looseObject({
   ConfigValues: z
     .record(z.string(), z.record(z.string(), z.string()))
     .optional(),
@@ -36,14 +36,14 @@ export interface YypConfig {
   children: YypConfig[];
 }
 const yypConfigSchema: z.ZodSchema<YypConfig> = z.lazy(() =>
-  z.object({
+  z.looseObject({
     name: z.string(),
     children: z.array(yypConfigSchema),
   }),
 );
 
 export type YypRoomOrderNode = z.infer<typeof yypRoomOrderNodeSchema>;
-const yypRoomOrderNodeSchema = z.object({
+const yypRoomOrderNodeSchema = z.looseObject({
   roomId: z.preprocess(
     (input) => {
       if (isObjectWithField(input, 'name') && typeof input.name === 'string') {
@@ -72,7 +72,7 @@ export const yypFolderSchema = z.preprocess(
     }
     return input;
   },
-  z.object({
+  z.looseObject({
     name: z.string(),
     tags: z.array(z.string()).optional(),
     folderPath: z.string(),
@@ -84,7 +84,7 @@ export const yypFolderSchema = z.preprocess(
 
 export type YypAudioGroup = z.infer<typeof yypAudioGroupSchema>;
 export type YypAudioGroupLoose = z.input<typeof yypAudioGroupSchema>;
-export const yypAudioGroupSchema = z.object({
+export const yypAudioGroupSchema = z.looseObject({
   ConfigValues: z
     .record(z.string(), z.record(z.string(), z.string()))
     .optional(),
@@ -121,7 +121,7 @@ export const yypTextureGroupSchema = z.looseObject({
 });
 
 export type YypIncludedFile = z.infer<typeof yypIncludedFileSchema>;
-const yypIncludedFileSchema = z.object({
+const yypIncludedFileSchema = z.looseObject({
   ConfigValues: z
     .record(
       z.string(),
@@ -167,7 +167,7 @@ export const yypSchema = z.preprocess(
     defaultScriptType: z.number().default(1),
     isEcma: z.boolean().default(false),
     tutorialPath: z.string().optional(),
-    configs: z.object({
+    configs: z.looseObject({
       name: z.literal('Default').default('Default'),
       children: z.array(yypConfigSchema).default([]),
     }),
@@ -175,7 +175,7 @@ export const yypSchema = z.preprocess(
     AudioGroups: z.array(yypAudioGroupSchema).default([]),
     TextureGroups: z.array(yypTextureGroupSchema).default([]),
     IncludedFiles: z.array(yypIncludedFileSchema).default([]),
-    MetaData: z.object({
+    MetaData: z.looseObject({
       IDEVersion: z.string(),
     }),
     LibraryEmitters: z.array(z.any()).optional(),
