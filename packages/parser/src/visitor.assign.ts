@@ -101,7 +101,10 @@ export function assignVariable(
 
   if (assignedToFunction || assignedToStructLiteral || assignedToArrayLiteral) {
     if (assignedToFunction) {
-      ctx.self = variable.container;
+      // For local variables (var/global), the container is the
+      // local scope, which would be wrong as the function's self
+      // context. Use the enclosing self scope instead.
+      ctx.self = info.local ? visitor.PROCESSOR.currentSelf : variable.container;
       visitor.functionExpression(assignedToFunction, ctx);
     } else if (assignedToStructLiteral) {
       visitor.structLiteral(assignedToStructLiteral, ctx);
