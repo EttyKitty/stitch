@@ -660,6 +660,7 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
             docs,
             ctx: { ...ctx, type: struct.getMember(name)?.type },
             instance: true,
+            structLiteralEntry: true,
           },
         );
       } else {

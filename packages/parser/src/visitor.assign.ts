@@ -17,6 +17,9 @@ export interface AssignmentInfo {
   static?: boolean;
   instance?: boolean;
   local?: boolean;
+  /** True when the assignment is a member of a struct literal being
+   * created. GML binds such member functions to the struct itself. */
+  structLiteralEntry?: boolean;
   docs?: Docs;
   ctx: VisitorContext;
 }
@@ -101,10 +104,20 @@ export function assignVariable(
 
   if (assignedToFunction || assignedToStructLiteral || assignedToArrayLiteral) {
     if (assignedToFunction) {
-      // For local variables (var/global), the container is the
-      // local scope, which would be wrong as the function's self
-      // context. Use the enclosing self scope instead.
-      ctx.self = info.local ? visitor.PROCESSOR.currentSelf : variable.container;
+      // Per GML, assigning a function to a variable implicitly calls
+      // method(self, fn): the function binds to the self scope where the
+      // assignment is made, not to the variable's owner. So a method
+      // assigned to a member of a struct (e.g.
+      // `myStruct.myMethod = function(){}`) keeps the enclosing instance
+      // context, letting it access the assigning instance's variables.
+      // Exceptions:
+      //  - Struct literal members bind to the struct being created.
+      //  - Static members keep the container binding (GML leaves them
+      //    unbound; the container is the closest fixed approximation).
+      ctx.self =
+        info.structLiteralEntry || info.static
+          ? variable.container
+          : visitor.PROCESSOR.currentSelf;
       visitor.functionExpression(assignedToFunction, ctx);
     } else if (assignedToStructLiteral) {
       visitor.structLiteral(assignedToStructLiteral, ctx);
