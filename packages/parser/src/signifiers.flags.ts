@@ -16,6 +16,7 @@ const signifierFlags = {
   Definitive: 1 << 13, // Is a definitive variable (defined in a definitiveSelf, such as a constructor or Create event)
   Enum: 1 << 14, // Is an enum
   EnumMember: 1 << 15, // Is an enum member
+  GlobalVar: 1 << 16, // Is declared via the `globalvar` statement (accessible without the `global.` prefix)
 };
 
 export class Flags {
@@ -139,6 +140,13 @@ export class Flags {
   }
   set enumMember(enumMember: boolean) {
     this.setFlag(signifierFlags.EnumMember, enumMember);
+  }
+
+  get globalvar() {
+    return this.getFlag(signifierFlags.GlobalVar);
+  }
+  set globalvar(globalvar: boolean) {
+    this.setFlag(signifierFlags.GlobalVar, globalvar);
   }
 
   deprecate(deprecated = true): this {

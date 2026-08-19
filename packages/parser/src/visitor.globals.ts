@@ -135,6 +135,8 @@ export class GmlGlobalDeclarationsVisitor extends GmlVisitorBase {
       jsdoc.name!.content,
       Range.from(this.PROCESSOR.file, jsdoc.name!),
     );
+    // GML `globalvar` variables can be referenced without the `global.` prefix.
+    symbol.globalvar = true;
     symbol.setType(
       typeFromParsedJsdocs(jsdoc, this.PROCESSOR.project.types, false),
     );
@@ -290,7 +292,10 @@ export class GmlGlobalDeclarationsVisitor extends GmlVisitorBase {
   }
 
   override globalVarDeclaration(children: GlobalVarDeclarationCstChildren) {
-    this.REGISTER_GLOBAL(children) as Signifier;
+    const symbol = this.REGISTER_GLOBAL(children) as Signifier;
+    // GML `globalvar` variables can be referenced without the `global.` prefix,
+    // unlike regular `global.` members.
+    symbol.globalvar = true;
   }
 
   override macroStatement(children: MacroStatementCstChildren) {

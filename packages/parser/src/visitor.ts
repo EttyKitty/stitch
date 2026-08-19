@@ -155,12 +155,14 @@ export class GmlSignifierVisitor extends GmlVisitorBase {
 
     // 1. GML Rule: Standard global variables (global.my_var) REQUIRE the 'global.' prefix.
     // Since this method is called for naked identifiers, we only return the item
-    // if it's an "Auto-Global" (Assets, Macros, Functions, Enums, or Native constants).
+    // if it's an "Auto-Global" (Assets, Macros, Functions, Enums, Native constants,
+    // or variables declared via the `globalvar` statement).
     const isAutoGlobal = !!(
       item.asset ||
       item.macro ||
       item.native ||
       item.enum ||
+      item.globalvar ||
       item.getTypeByKind('Function')
     );
 
