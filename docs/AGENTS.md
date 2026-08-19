@@ -266,6 +266,8 @@ Svelte-based webview applications for sprite editor and runner.
 ## Development notes
 
 - **Parser tests** use mocha with `--parallel=false` (tests share state via `Project`). Run from `packages/parser`: `pnpm test`
+- **Parser tests run compiled `dist`, not `src`** (`config/.mocharc.cjs` spec: `dist/**/*.test.js`). Run `pnpm build` in `packages/parser` before `pnpm test`, or your src changes won't be exercised (stack traces source-map back to `src/`, which is misleading).
+- **Mocha config sets `bail: true`** — the first failing test aborts the suite, so later tests never run and show as "pending". A "1 failing" report is not the full picture; check the pending count for masked failures.
 - **VSCode extension** must be built before debugging (F5 launches pre-built extension). Use `pnpm watch` for auto-rebuild.
 - **Grammar** defined in YAML (`syntaxes/gml.tmLanguage.yaml`), converted to JSON during build. Edit YAML, then rebuild.
 - **Package naming**: npm packages use `@bscotch/` scope. The VSCode extension publisher is `etty`.
