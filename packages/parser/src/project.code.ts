@@ -457,6 +457,14 @@ export class Code {
       if (isDefinedInThisFile) {
         signifier.unsetDef();
       }
+      // If the symbol has no definition anywhere, it was implicitly
+      // created by this file (e.g. an undeclared member read), so it
+      // should also be cleaned up when this file no longer references
+      // it. Native and asset symbols never have definitions, but must
+      // not be removed here.
+      const isOrphanCandidate =
+        isDefinedInThisFile ||
+        (!signifier.def && !signifier.native && !signifier.asset);
       // Remove all references to this symbol found in this file.
       // Flag all other files as being dirty so they get reprocessed.
       for (const symbolRef of signifier.refs) {
@@ -467,7 +475,7 @@ export class Code {
         }
       }
       // If no refs remain and was defined here, delete the signifier as well
-      if (isDefinedInThisFile && !signifier.refs.size) {
+      if (isOrphanCandidate && !signifier.refs.size) {
         try {
           signifier.parent.removeMember(signifier.name);
         } catch (err) {
