@@ -111,4 +111,33 @@ describe('Incremental reload', function () {
     await definingFile.reload(strippedContent, { reloadDirty: true });
     expect(dirty.size).to.equal(0);
   });
+
+  it('finds a reference added after the sort cache was warmed', function () {
+    // The refs list sorts lazily and caches the result. A reference added
+    // afterwards must invalidate that cache, otherwise lookups silently
+    // miss it while the ref is still in the model.
+    const refs = definingFile.refs; // warm the cache
+    const template = refs[0]!;
+    const covered = new Set<number>();
+    for (const ref of refs) {
+      for (let o = ref.start.offset; o <= ref.end.offset; o++) covered.add(o);
+    }
+    let gap = -1;
+    for (let o = 0; o < definingFile.content.length; o++) {
+      if (!covered.has(o)) {
+        gap = o;
+        break;
+      }
+    }
+    expect(gap).to.be.greaterThan(-1);
+    expect(definingFile.getReferenceAt(gap)).to.equal(undefined);
+
+    const late = {
+      ...template,
+      start: { ...template.start, offset: gap },
+      end: { ...template.end, offset: gap },
+    };
+    definingFile.addRef(late as any);
+    expect(definingFile.getReferenceAt(gap)).to.not.equal(undefined);
+  });
 });
