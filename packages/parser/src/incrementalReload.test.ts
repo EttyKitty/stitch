@@ -1,9 +1,14 @@
 import { expect } from 'chai';
 import type { Code } from './project.code.js';
+import { Range } from './project.location.js';
 import { Project } from './project.js';
 import { assert, ok } from './util.js';
 
 describe('Incremental reload', function () {
+  // Every test re-initializes the project, and Project.initialize performs a
+  // runtime-version lookup over the network, which can take tens of seconds
+  // on a cold or slow connection.
+  this.timeout(120_000);
   let project: Project;
   let definingFile: Code;
   let dependentFile: Code;
@@ -139,5 +144,27 @@ describe('Incremental reload', function () {
     };
     definingFile.addRef(late as any);
     expect(definingFile.getReferenceAt(gap)).to.not.equal(undefined);
+  });
+
+  it('keeps refs from different files at identical offsets', function () {
+    // Two files can reference the same member with the same byte span.
+    // Dedupe must compare the file, or the second ref is silently dropped.
+    const template = definingFile.refs[0]!;
+    const signifier = template.item;
+    const range = Range.from(dependentFile, {
+      start: {
+        offset: template.start.offset,
+        line: template.start.line,
+        column: template.start.column,
+      },
+      end: {
+        offset: template.end.offset,
+        line: template.end.line,
+        column: template.end.column,
+      },
+    });
+    const added = signifier.addRef(range);
+    expect(added.file).to.equal(dependentFile);
+    expect(dependentFile.refs.includes(added)).to.equal(true);
   });
 });
