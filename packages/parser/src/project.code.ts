@@ -535,15 +535,45 @@ export class Code {
    * provide new content to use instead of reading from disk.
    */
   async reload(content?: string, options?: { reloadDirty?: boolean }) {
-    logger.info('Code.reload start', { file: this.path.basename });
+    const totalStart = Date.now();
+    logger.info(
+      'Code.reload start',
+      {
+        file: this.path.basename,
+        contentLength: typeof content === 'string' ? content.length : -1,
+      },
+    );
+    const parseStart = Date.now();
     await this.parse(content);
+    const parseMillis = Date.now() - parseStart;
+    const globalsStart = Date.now();
     this.updateGlobals();
+    const globalsMillis = Date.now() - globalsStart;
+    const symbolsStart = Date.now();
     this.updateAllSymbols();
+    const symbolsMillis = Date.now() - symbolsStart;
+    const diagnosticsStart = Date.now();
     this.updateDiagnostics();
+    const diagnosticsMillis = Date.now() - diagnosticsStart;
+    const drainStart = Date.now();
     if (options?.reloadDirty) {
       this.project.drainDirtyFileUpdateQueue();
     }
-    logger.info('Code.reload done', { file: this.path.basename });
+    const drainMillis = Date.now() - drainStart;
+    logger.info(
+      'Code.reload done',
+      {
+        file: this.path.basename,
+        parseMillis,
+        globalsMillis,
+        symbolsMillis,
+        diagnosticsMillis,
+        drainMillis,
+        totalMillis: Date.now() - totalStart,
+        refs: this._refs.length,
+        contentLength: this.content.length,
+      },
+    );
   }
 
   protected discoverEventInheritanceWarnings() {
