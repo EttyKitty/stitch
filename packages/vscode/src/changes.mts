@@ -99,12 +99,28 @@ export class ChangeTracker {
       if (['create', 'delete'].includes(type) && uri.path.endsWith('.gml')) {
         continue;
       }
-      // Changes to existing GML files can be handled immediately.
       if (type === 'change' && uri.path.endsWith('.gml')) {
-        logger.info(`GML file "${uri.path}" changed on disk. Reloading!`);
-        await this.provider.getGmlFile(uri)?.reload(undefined, {
-          reloadDirty: true,
-        });
+        const code = this.provider.getGmlFile(uri);
+        const openDoc = vscode.workspace.textDocuments.find(
+          (d) => d.uri.fsPath === uri.fsPath,
+        );
+        if (openDoc && code && openDoc.getText() === code.content) {
+          logger.info(
+            `GML disk change for "${uri.path}" matches parsed content. Skipping!`,
+          );
+        } else if (openDoc && code) {
+          logger.info(
+            `GML file "${uri.path}" changed on disk. Reloading from editor text!`,
+          );
+          await code.reload(openDoc.getText(), {
+            reloadDirty: true,
+          });
+        } else {
+          logger.info(`GML file "${uri.path}" changed on disk. Reloading!`);
+          await code?.reload(undefined, {
+            reloadDirty: true,
+          });
+        }
       }
       // Changes to yy files can be handled immediately.
       // For now we

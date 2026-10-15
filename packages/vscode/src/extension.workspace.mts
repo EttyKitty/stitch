@@ -20,7 +20,6 @@ import {
 } from './diagnostics.mjs';
 import { stitchEvents } from './events.mjs';
 import { activateStitchExtension } from './extension.activate.mjs';
-import { completionTriggerCharacters } from './extension.completions.mjs';
 import { GameMakerSemanticTokenProvider } from './extension.highlighting.mjs';
 import { GameMakerProject } from './extension.project.mjs';
 import { GameMakerRunner } from './extension.runner.mjs';
@@ -363,10 +362,30 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
     return ref;
   }
 
-  /**
-   * A general function for reprocessing files upon change. Handles
-   * debounding and the like.
-   */
+  protected currentDoc(key: string): vscode.TextDocument | undefined {
+    return vscode.workspace.textDocuments.find((d) => d.uri.fsPath === key);
+  }
+
+  protected scheduleDebounced(
+    key: string,
+    doc: vscode.TextDocument,
+    delay: number,
+  ) {
+    clearTimeout(this.debouncingOnChange.get(key));
+    const timer = setTimeout(() => {
+      this.debouncingOnChange.delete(key);
+      const current = this.currentDoc(key);
+      logger.info(
+        `Firing scheduled reprocess ${doc.fileName} scheduledVersion=${doc.version} currentVersion=${current?.version} delay=${delay}ms`,
+      );
+      void this.onChangeDoc(current ?? doc);
+    }, delay);
+    this.debouncingOnChange.set(key, timer);
+    logger.info(
+      `Scheduled reprocess ${doc.fileName} version=${doc.version} in=${delay}ms`,
+    );
+  }
+
   async onChangeDoc(
     event: vscode.TextDocumentChangeEvent | vscode.TextDocument | undefined,
   ) {
@@ -377,56 +396,71 @@ export class StitchWorkspace implements vscode.SignatureHelpProvider {
     if (doc.languageId !== 'gml') {
       return;
     }
-
-    // While actively typing, we don't want to reprocess on
-    // every keystroke since that'll make things feel sluggish.
-    // So for calls to this function triggered by typing, we
-    // only immediately reprocess if the character is a trigger
-    // character. Otherwise, we debounce.
-    if (
-      'contentChanges' in event &&
-      event.contentChanges.length === 1 &&
-      event.contentChanges[0].text.length
-    ) {
-      const isTriggerCharacter = [
-        ...completionTriggerCharacters,
-        ' ',
-        '\r\n',
-        '\n',
-        ';',
-        ',',
-      ].includes(event.contentChanges[0].text as any);
-      if (!isTriggerCharacter) {
-        // TODO: Debounce this so that we still get reprocessing
-        // while editing, but only when not actively typing.
-        clearTimeout(this.debouncingOnChange.get(doc.uri.fsPath));
-        this.debouncingOnChange.set(
-          doc.uri.fsPath,
-          setTimeout(() => {
-            this.onChangeDoc(doc);
-          }, stitchConfig.reprocessOnTypeDelay),
+    const key = doc.uri.fsPath;
+    if ('contentChanges' in event) {
+      if (event.contentChanges.length > 0) {
+        const first = event.contentChanges[0];
+        const preview = first.text.slice(0, 20).replace(/[\r\n]+/g, '\\n');
+        logger.info(
+          `Typing ${doc.fileName} version=${doc.version} changes=${event.contentChanges.length} firstLength=${first.text.length} preview=${preview} delay=${stitchConfig.reprocessOnTypeDelay}ms`,
         );
-        logger.info(`Skipped processing file ${doc.fileName}`);
-        return;
+      } else {
+        logger.info(
+          `EmptyChange ${doc.fileName} version=${doc.version} delay=${stitchConfig.reprocessOnTypeDelay}ms`,
+        );
       }
-    }
-
-    if (this.processingFiles.has(doc.uri.fsPath)) {
-      logger.info(`Already processing file ${doc.fileName}`);
-      clearTimeout(this.debouncingOnChange.get(doc.uri.fsPath));
+      this.scheduleDebounced(key, doc, stitchConfig.reprocessOnTypeDelay);
       return;
     }
-
-    logger.info(`Started processing file ${doc.fileName}`);
-
-    this.diagnosticCollection.delete(doc.uri);
-    const promise = StitchWorkspace.provider.updateFile(doc);
-    this.processingFiles.set(doc.uri.fsPath, promise);
-    promise.finally(() => {
-      this.processingFiles.delete(doc.uri.fsPath);
-      this.semanticHighlightProvider.refresh();
-      logger.info(`Done processing file ${doc.fileName}`);
-    });
+    logger.info(`TimerFired ${doc.fileName} version=${doc.version}`);
+    if (this.processingFiles.has(key)) {
+      logger.info(`Deferred ${doc.fileName} version=${doc.version} busy`);
+      this.scheduleDebounced(key, this.currentDoc(key) ?? doc, 100);
+      return;
+    }
+    const latest = this.currentDoc(key) ?? doc;
+    const existing = this.getGmlFile(latest);
+    if (existing && latest.getText() === existing.content) {
+      logger.info(
+        `Skipping reprocess ${latest.fileName} version=${latest.version} content unchanged`,
+      );
+      return;
+    }
+    const startVersion = latest.version;
+    const startTime = Date.now();
+    logger.info(
+      `Started processing file ${latest.fileName} version=${startVersion}`,
+    );
+    const promise = this.updateFile(latest);
+    this.processingFiles.set(key, promise);
+    void promise
+      .catch((error) => {
+        logger.error(`Failed processing file ${latest.fileName}`, error);
+      })
+      .finally(() => {
+        this.processingFiles.delete(key);
+        const pending = this.debouncingOnChange.get(key);
+        const current = this.currentDoc(key);
+        if (current && current.version !== startVersion) {
+          logger.info(
+            `Version changed during parse ${current.fileName} from=${startVersion} to=${current.version} in=${Date.now() - startTime}ms`,
+          );
+          this.scheduleDebounced(
+            key,
+            current,
+            stitchConfig.reprocessOnTypeDelay,
+          );
+        } else if (pending) {
+          logger.info(
+            `Rerun pending ${latest.fileName}, skipping highlight refresh`,
+          );
+        } else {
+          this.semanticHighlightProvider.refresh();
+        }
+        logger.info(
+          `Done processing file ${latest.fileName} in=${Date.now() - startTime}ms`,
+        );
+      });
   }
 
   async createNewProject() {

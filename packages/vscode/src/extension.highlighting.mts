@@ -3,7 +3,7 @@ import { literal } from '@bscotch/utility';
 import vscode from 'vscode';
 import type { StitchWorkspace } from './extension.workspace.mjs';
 import { locationOf } from './lib.mjs';
-import { warn } from './log.mjs';
+import { logger, warn } from './log.mjs';
 
 const semanticTokenTypes = literal([
   'function',
@@ -57,9 +57,19 @@ export class GameMakerSemanticTokenProvider
 
   private _onDidChangeSemanticTokens = new vscode.EventEmitter<void>();
   readonly onDidChangeSemanticTokens = this._onDidChangeSemanticTokens.event;
+  private refreshTimeout: NodeJS.Timeout | undefined;
+  private refreshRequests = 0;
 
   refresh(): void {
-    this._onDidChangeSemanticTokens.fire();
+    this.refreshRequests += 1;
+    clearTimeout(this.refreshTimeout);
+    this.refreshTimeout = setTimeout(() => {
+      const coalesced = this.refreshRequests;
+      this.refreshRequests = 0;
+      this.refreshTimeout = undefined;
+      logger.debug(`Semantic refresh fired coalesced=${coalesced}`);
+      this._onDidChangeSemanticTokens.fire();
+    }, 100);
   }
 
   provideDocumentSemanticTokens(
@@ -71,6 +81,8 @@ export class GameMakerSemanticTokenProvider
 
       const builder = new vscode.SemanticTokensBuilder(semanticTokensLegend);
       const lineCache = new Map<number, string>();
+      const startTime = Date.now();
+      let tokenCount = 0;
 
       for (const ref of file.refs) {
         if (ref.start?.line === undefined || ref.end?.line === undefined) continue;
@@ -86,7 +98,11 @@ export class GameMakerSemanticTokenProvider
 
         let lineText = lineCache.get(range.start.line);
         if (lineText === undefined) {
-          lineText = document.lineAt(range.start.line).text;
+          try {
+            lineText = document.lineAt(range.start.line).text;
+          } catch {
+            continue;
+          }
           lineCache.set(range.start.line, lineText);
         }
 
@@ -96,12 +112,20 @@ export class GameMakerSemanticTokenProvider
 
         try {
           builder.push(range, tokenType, [...modifiers]);
+          tokenCount += 1;
         } catch (error) {
           warn('Token push failed', error);
           continue; 
         }
       }
-      return builder.build();
+      const tokens = builder.build();
+      const elapsed = Date.now() - startTime;
+      if (elapsed > 50) {
+        logger.debug(
+          `Semantic tokens slow file=${document.fileName} tokens=${tokenCount} in=${elapsed}ms`,
+        );
+      }
+      return tokens;
     } catch (error) {
       warn('Semantic provider crashed', error);
       return;
