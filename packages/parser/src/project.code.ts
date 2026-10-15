@@ -401,14 +401,17 @@ export class Code {
 
   addRef(ref: Reference) {
     this._refs.push(ref);
+    this._rangesAreSorted = false;
   }
 
   addStructNewMemberRange(range: StructNewMemberRange) {
     this._structNewMemberRanges.push(range);
+    this._rangesAreSorted = false;
   }
 
   addFunctionArgRange(range: FunctionArgRange) {
     this._functionArgRanges.push(range);
+    this._rangesAreSorted = false;
   }
 
   addFunctionCall(call: FunctionArgRange[]) {
