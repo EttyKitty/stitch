@@ -64,7 +64,13 @@ export class Signifier extends Flags {
 
   addRef(location: Range, isDef = false, isWrite = false): Reference {
     for (const existing of this.refs) {
-      if (existing.start.offset === location.start.offset && existing.end.offset === location.end.offset) {
+      // Ref spans are only unique within a single file, so dedupe must
+      // compare the file too or refs from other files are silently dropped.
+      if (
+        existing.file === location.file &&
+        existing.start.offset === location.start.offset &&
+        existing.end.offset === location.end.offset
+      ) {
         if (isDef) existing.isDef = true;
         if (isWrite) existing.isWrite = true;
         return existing;
